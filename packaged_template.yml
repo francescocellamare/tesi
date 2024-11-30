@@ -1,0 +1,760 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template for CloudFormation demo example
+Parameters:
+  IAMUser:
+    Type: String
+    Description: The ARN of the IAM user (e.g., arn:aws:iam::123123123123:user/myuid).
+    Default: arn:aws:iam::344740472567:user/f.cellamare
+  Email:
+    Type: String
+    AllowedPattern: ^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$
+    ConstraintDescription: Must be a valid email address.
+    Default: francesco.pio.cellamare28@gmail.com
+  BranchName:
+    Description: CodeCommit branch name
+    Type: String
+    Default: master
+  RepositoryName:
+    Description: CodeComit repository name
+    Type: String
+    Default: SpringProjectRepository
+  ProjectName:
+    Description: CodeBuild project name
+    Type: String
+    Default: DemoCodeBuildCloudFormation
+  PipelineName:
+    Description: CodePipeline pipeline name
+    Type: String
+    Default: DemoPipeline
+  BucketName:
+    Description: Bucket name
+    Type: String
+    Default: demo-bucket-cloudformation
+Resources:
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: codepipeline.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AWSStepFunctionsConsoleFullAccess
+      - arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess
+      Policies:
+      - PolicyName: CodePipelinePolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - codecommit:*
+            - s3:*
+            - codebuild:*
+            - codedeploy:*
+            Resource:
+            - arn:aws:codecommit:eu-south-1:344740472567:DemoRepositoryCloudFormation
+            - arn:aws:s3:::demo-artifact-store-cloudformation
+            - arn:aws:s3:::demo-artifact-store-cloudformation/*
+            - '*'
+  PipelineInstance:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name:
+        Ref: PipelineName
+      RoleArn:
+        Fn::GetAtt:
+        - CodePipelineServiceRole
+        - Arn
+      ArtifactStore:
+        Type: S3
+        Location:
+          Ref: ArtifactStoreBucket
+      Stages:
+      - Name: Source
+        Actions:
+        - Name: SourceAction
+          ActionTypeId:
+            Category: Source
+            Owner: AWS
+            Provider: CodeCommit
+            Version: '1'
+          OutputArtifacts:
+          - Name: SourceOutput
+          Configuration:
+            OutputArtifactFormat: CODEBUILD_CLONE_REF
+            RepositoryName:
+              Ref: RepositoryName
+            BranchName:
+              Ref: BranchName
+          RunOrder: 1
+      - Name: Build
+        Actions:
+        - Name: BuildAction
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Provider: CodeBuild
+            Version: '1'
+          InputArtifacts:
+          - Name: SourceOutput
+          OutputArtifacts:
+          - Name: DeployOutput
+          Configuration:
+            ProjectName:
+              Ref: ProjectName
+          RunOrder: 2
+          Namespace: BuildVariables
+      - Name: StateMachine
+        Actions:
+        - Name: FeedbackStateMachine
+          ActionTypeId:
+            Category: Invoke
+            Owner: AWS
+            Provider: StepFunctions
+            Version: '1'
+          Configuration:
+            StateMachineArn:
+              Fn::GetAtt:
+              - FeedbackStateMachine
+              - Arn
+            Input:
+              Fn::Sub: "{\n  \"bucketname\": \"${BucketName}\",\n  \"key\": \"${PipelineName}/DeployOutp/\"\
+                ,\n  \"buildResult\": \"#{BuildVariables.BUILD_STATUS}\",\n  \"branch\"\
+                : \"${BranchName}\"\n}\n"
+          InputArtifacts:
+          - Name: DeployOutput
+          RunOrder: 3
+  ArtifactStoreBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Ref: BucketName
+      Tags:
+      - Key: Name
+        Value:
+          Ref: BucketName
+      AccessControl: Private
+  ArtifactStoreBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: ArtifactStoreBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: FullAccessForIAMUser
+          Effect: Allow
+          Action: s3:*
+          Resource:
+          - Fn::Sub: arn:aws:s3:::${BucketName}
+          - Fn::Sub: arn:aws:s3:::${BucketName}/*
+          Principal:
+            AWS:
+              Ref: IAMUser
+  CodeBuildInstance:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        EncryptionDisabled: true
+        OverrideArtifactName: true
+        Type: CODEPIPELINE
+      BadgeEnabled: false
+      ConcurrentBuildLimit: '1'
+      Description: Demo build stage inside the pipeline
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        Type: LINUX_CONTAINER
+      Name:
+        Ref: ProjectName
+      QueuedTimeoutInMinutes: '5'
+      ServiceRole:
+        Fn::GetAtt:
+        - CodeBuildServiceRole
+        - Arn
+      Source:
+        Type: CODEPIPELINE
+      Tags:
+      - Key: Name
+        Value:
+          Ref: ProjectName
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: codebuild.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AWSCodeCommitFullAccess
+      - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      - arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess
+      Path: /
+      Policies:
+      - PolicyName: CodeBuildPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource:
+            - arn:aws:codecommit:eu-south-1:344740472567:DemoRepositoryCloudFormation
+            - '*'
+  CodeBuildFeedbackInstance:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: S3
+        Location:
+          Ref: ArtifactStoreBucket
+        Path: build-artifacts/
+        Packaging: ZIP
+        Name: FeedbackBuildArtifacts.zip
+      ConcurrentBuildLimit: '1'
+      Description: Build stage inside the state machine
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        Type: LINUX_CONTAINER
+      Name: FeedbackBuildProject
+      QueuedTimeoutInMinutes: '5'
+      ServiceRole:
+        Fn::GetAtt:
+        - CodeBuildServiceRole
+        - Arn
+      Source:
+        Type: CODECOMMIT
+        Location:
+          Fn::Sub: https://git-codecommit.eu-south-1.amazonaws.com/v1/repos/SpringProjectRepository
+        BuildSpec:
+          Fn::Sub: "version: 0.2\nenv:\n  shell: /bin/bash\n\nphases:\n  install:\n\
+            \    on-failure: CONTINUE\n    commands:\n      - echo \"Setting JAVA_HOME\
+            \ to Java 17\"\n      - export JAVA_HOME=$(dirname $(dirname $(readlink\
+            \ -f $(which java))))  # This sets JAVA_HOME\n      - echo $JAVA_HOME\n\
+            \      - echo \"Installing dependencies\"\n      - echo \"Checking Java\
+            \ version\"\n      - java -version\n      - mvn -v\n\n  pre_build:\n \
+            \   on-failure: CONTINUE\n    commands:\n      - echo \"Starting the build\
+            \ process\"\n      - mvn clean validate -q\n\n  build:\n    on-failure:\
+            \ CONTINUE\n    commands:\n      - echo \"Compiling the Spring Boot project\"\
+            \n      - mvn clean compile -q\n\n  post_build:\n    on-failure: CONTINUE\n\
+            \    commands:\n      - echo \"Running the test suite\"\n      - mvn test\
+            \ -q\n      - echo \"Tests completed\"\n      - echo \"End\"\nartifacts:\n\
+            \  files:\n    - target/surefire-reports/**\n  discard-paths: yes \n"
+      Tags:
+      - Key: Name
+        Value: FeedbackBuildProject
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+      - arn:aws:iam::aws:policy/AWSCodeCommitFullAccess
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+  CreateReport:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+      - x86_64
+      Code:
+        S3Bucket: demo-package-bucket
+        S3Key: lambdacode/c0f25a20fe3253dfa028f928ac9c3a45
+      Description: State to create the report from the previus build phase, both commit
+        one and tests execution one will be created
+      FunctionName: createReport
+      Handler: index.createReport
+      Role:
+        Fn::GetAtt:
+        - LambdaRole
+        - Arn
+      Runtime: python3.10
+      Timeout: 10
+  CreatePullRequest:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+      - x86_64
+      Code:
+        S3Bucket: demo-package-bucket
+        S3Key: lambdacode/118a4c1277ee93af0723cef9be520d90
+      Description: State to create the final pull request if everything succeeded
+      FunctionName: createPullRequest
+      Handler: index.createPullRequest
+      Role:
+        Fn::GetAtt:
+        - LambdaRole
+        - Arn
+      Runtime: python3.10
+      Timeout: 25
+      Environment:
+        Variables:
+          REPOSITORY_NAME:
+            Ref: RepositoryName
+  HandleReport:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+      - x86_64
+      Code:
+        S3Bucket: demo-package-bucket
+        S3Key: lambdacode/344ad4c53dd42072ca2041feb577da1b
+      Description: State to generate test suite for the given .class file
+      FunctionName: handleReport
+      Handler: index.handleReport
+      Role:
+        Fn::GetAtt:
+        - LambdaRole
+        - Arn
+      Layers:
+      - arn:aws:lambda:eu-south-1:344740472567:layer:stepfunctionLambdaLayer:2
+      Runtime: python3.10
+      Environment:
+        Variables:
+          STACK_NAME:
+            Ref: AWS::StackName
+      Timeout: 90
+  LambdaApprovalFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: demo-package-bucket
+        S3Key: lambdacode/54db3f5718448e03b4df7ffa2510ca16
+      Description: Lambda function that callback to AWS Step Functions
+      FunctionName: LambdaApprovalFunction
+      Handler: index.lambda_handler
+      Role:
+        Fn::GetAtt:
+        - LambdaApiGatewayIAMRole
+        - Arn
+      Runtime: python3.10
+  SendEmail:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.sendEmail
+      Role:
+        Fn::GetAtt:
+        - LambdaSendEmailExecutionRole
+        - Arn
+      Runtime: python3.10
+      FunctionName: sendEmail
+      Code:
+        S3Bucket: demo-package-bucket
+        S3Key: lambdacode/ce61d2618c1ccd80da073900809300a8
+      Timeout: 25
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN:
+            Ref: SNSHumanApprovalEmailTopic
+  SendPullRequestEmail:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.sendPullRequestEmail
+      Role:
+        Fn::GetAtt:
+        - LambdaSendEmailExecutionRole
+        - Arn
+      Runtime: python3.10
+      FunctionName: sendPullRequestEmail
+      Code:
+        S3Bucket: demo-package-bucket
+        S3Key: lambdacode/27f12c97743a08810ba1651da04ce30f
+      Timeout: 25
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN:
+            Ref: SNSHumanApprovalEmailTopic
+          REPOSITORY_NAME:
+            Ref: RepositoryName
+  LambdaApiGatewayInvoke:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+        - LambdaApprovalFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ExecutionApi}/*
+  LambdaApiGatewayIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      Policies:
+      - PolicyName: CloudWatchLogsPolicy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource:
+              Fn::Sub: arn:${AWS::Partition}:logs:*:*:*
+      - PolicyName: StepFunctionsPolicy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - states:SendTaskFailure
+            - states:SendTaskSuccess
+            Resource: '*'
+  LambdaStateMachineExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: states.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: InvokeCallbackLambda
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:InvokeFunction
+            Resource:
+            - Fn::Sub: ${SendEmail.Arn}
+  LambdaSendEmailExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: CloudWatchLogsPolicy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource:
+              Fn::Sub: arn:${AWS::Partition}:logs:*:*:*
+      - PolicyName: SNSSendEmailPolicy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - SNS:Publish
+            Resource:
+            - Fn::Sub: ${SNSHumanApprovalEmailTopic}
+      - PolicyName: S3FullAccessPolicy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:*
+            Resource:
+            - arn:aws:s3:::*
+  FeedbackStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: FeedbackStateMachine
+      DefinitionString:
+        Fn::Sub: "{\n  \"Comment\": \"State machine to handle test generation with\
+          \ feedback\",\n  \"StartAt\": \"CreateReport\",\n  \"States\": {\n    \"\
+          CreateReport\":\n      {\n        \"Type\": \"Task\",\n        \"Resource\"\
+          : \"arn:aws:states:::lambda:invoke\",\n        \"Parameters\":\n       \
+          \   {\n            \"FunctionName\": \"arn:aws:lambda:eu-south-1:344740472567:function:createReport\"\
+          ,\n            \"Payload\": { \"bucketname.$\": \"$.bucketname\", \"key.$\"\
+          : \"$.key\", \"branch.$\": \"$.branch\" }\n          },\n        \"ResultSelector\"\
+          : { \"Payload.$\": \"$.Payload\" },\n        \"ResultPath\": \"$.taskResult\"\
+          ,\n        \"Next\": \"BuildResultChoice\"\n      },\n    \"BuildResultChoice\"\
+          :\n      {\n        \"Type\": \"Choice\",\n        \"Choices\":\n      \
+          \    [\n            {\n              \"Variable\": \"$.buildResult\",\n\
+          \              \"StringEquals\": \"SUCCEEDED\",\n              \"Next\"\
+          : \"HandleReport\"\n            },\n            {\n              \"Variable\"\
+          : \"$.buildResult\",\n              \"StringEquals\": \"FAILED\",\n    \
+          \          \"Next\": \"SendEmail\"\n            }\n          ],\n      \
+          \  \"Default\": \"UnknownState\"\n      },\n    \"HandleReport\":\n    \
+          \  {\n        \"Type\": \"Task\",\n        \"Resource\": \"arn:aws:states:::lambda:invoke\"\
+          ,\n        \"Parameters\":\n          {\n            \"Payload.$\": \"$\"\
+          ,\n            \"FunctionName\": \"arn:aws:lambda:eu-south-1:344740472567:function:handleReport\"\
+          \n          },\n        \"ResultSelector\": { \"Payload.$\": \"$.Payload\"\
+          \ },\n        \"ResultPath\": \"$.taskResult\",\n        \"Retry\":\n  \
+          \        [\n            {\n              \"ErrorEquals\":\n            \
+          \    [\n                  \"Lambda.ServiceException\",\n               \
+          \   \"Lambda.AWSLambdaException\",\n                  \"Lambda.SdkClientException\"\
+          ,\n                  \"Lambda.TooManyRequestsException\"\n             \
+          \   ],\n              \"IntervalSeconds\": 1,\n              \"MaxAttempts\"\
+          : 3,\n              \"BackoffRate\": 2,\n              \"JitterStrategy\"\
+          : \"FULL\"\n            }\n          ],\n        \"Next\": \"StartBuild\"\
+          \n      },\n    \"StartBuild\": {\n        \"Type\": \"Task\",\n       \
+          \ \"Resource\": \"arn:aws:states:::codebuild:startBuild.sync\",\n      \
+          \  \"Parameters\": {\n          \"ProjectName\": \"FeedbackBuildProject\"\
+          ,\n          \"SourceVersion.$\": \"$.taskResult.Payload.body.branch\"\n\
+          \        },\n        \"ResultPath\": \"$.taskResult\",\n        \"Next\"\
+          : \"Patch\",\n        \"Catch\": [\n          {\n            \"ErrorEquals\"\
+          : [\"States.TaskFailed\"],\n            \"ResultPath\": \"$.taskResult\"\
+          ,\n            \"Next\": \"ParseCause\"\n          }\n        ]\n      },\n\
+          \      \"ParseCause\": {\n          \"Type\": \"Pass\",\n          \"Parameters\"\
+          : {\n            \"bucketname.$\": \"$.bucketname\",\n            \"key.$\"\
+          : \"$.key\",\n            \"buildResult.$\": \"$.buildResult\",\n      \
+          \      \"Cause.$\": \"States.StringToJson($.taskResult.Cause)\"\n      \
+          \    },\n          \"ResultPath\": \"$.parsedCause\",\n          \"Next\"\
+          : \"ExtractSourceVersion\"\n        },\n        \"ExtractSourceVersion\"\
+          : {\n          \"Type\": \"Pass\",\n          \"Parameters\": {\n      \
+          \      \"branch.$\": \"$.parsedCause.Cause.Build.SourceVersion\"\n     \
+          \     },\n          \"ResultPath\": \"$.branch\",\n          \"Next\": \"\
+          SetFailedResult\"\n        },\n      \"SetFailedResult\": {\n        \"\
+          Type\": \"Pass\",\n        \"Parameters\": {\n          \"bucketname.$\"\
+          : \"$.bucketname\",\n          \"key.$\": \"$.key\",\n          \"buildResult\"\
+          : \"FAILED\",\n          \"branch.$\": \"$.branch.branch\"\n        },\n\
+          \        \"ResultPath\": \"$\",\n        \"Next\": \"FinalBuild\"\n    \
+          \  },\n      \"Patch\": {\n        \"Type\": \"Pass\",\n        \"Parameters\"\
+          : {\n          \"bucketname.$\": \"$.bucketname\",\n          \"key.$\"\
+          : \"$.key\",\n          \"buildResult.$\": \"$.taskResult.Build.BuildStatus\"\
+          ,\n          \"branch.$\": \"$.taskResult.Build.SourceVersion\"\n      \
+          \  },\n        \"ResultPath\": \"$\",\n        \"Next\": \"FinalBuild\"\n\
+          \      },\n      \"FinalBuild\": {\n        \"Type\": \"Choice\",\n    \
+          \      \"Choices\":\n            [\n              {\n                \"\
+          Variable\": \"$.buildResult\",\n                \"StringEquals\": \"SUCCEEDED\"\
+          ,\n                \"Next\": \"SendPullRequestEmail\"\n              },\n\
+          \              {\n                \"Variable\": \"$.buildResult\",\n   \
+          \             \"StringEquals\": \"FAILED\",\n                \"Next\": \"\
+          CreateReport\"\n              }\n            ],\n          \"Default\":\
+          \ \"UnknownState\"\n      },\n      \"SendPullRequestEmail\":\n      {\n\
+          \        \"Type\": \"Task\",\n        \"Resource\": \"arn:${AWS::Partition}:states:::lambda:invoke.waitForTaskToken\"\
+          ,\n        \"Parameters\":\n          {\n            \"Payload\":\n    \
+          \          {\n                \"ExecutionContext.$\": \"$$\",\n        \
+          \        \"APIGatewayEndpoint\": \"https://${ExecutionApi}.execute-api.${AWS::Region}.amazonaws.com/states\"\
+          ,\n                \"branch.$\": \"$.branch\"\n              },\n      \
+          \      \"FunctionName\": \"arn:aws:lambda:eu-south-1:344740472567:function:sendPullRequestEmail\"\
+          \n          },\n        \"ResultPath\": \"$.mailInfo\",\n        \"Retry\"\
+          :\n          [\n            {\n              \"ErrorEquals\":\n        \
+          \        [\n                  \"Lambda.ServiceException\",\n           \
+          \       \"Lambda.AWSLambdaException\",\n                  \"Lambda.SdkClientException\"\
+          ,\n                  \"Lambda.TooManyRequestsException\"\n             \
+          \   ],\n              \"IntervalSeconds\": 1,\n              \"MaxAttempts\"\
+          : 3,\n              \"BackoffRate\": 2,\n              \"JitterStrategy\"\
+          : \"FULL\"\n            }\n          ],\n        \"Next\": \"ApprovalPullRequest\"\
+          \n      },\n      \"ApprovalPullRequest\":\n      {\n        \"Type\": \"\
+          Choice\",\n        \"Choices\":\n          [\n            {\n          \
+          \    \"Variable\": \"$.mailInfo.Status\",\n              \"StringEquals\"\
+          : \"Approved!\",\n              \"Next\": \"CreatePullRequest\"\n      \
+          \      },\n            {\n              \"Variable\": \"$.mailInfo.Status\"\
+          ,\n              \"StringEquals\": \"Rejected!\",\n              \"Next\"\
+          : \"FailState\"\n            }\n          ]\n      },\n      \"CreatePullRequest\"\
+          :\n      {\n        \"Type\": \"Task\",\n        \"Resource\": \"arn:aws:states:::lambda:invoke\"\
+          ,\n        \"Parameters\":\n          {\n            \"FunctionName\": \"\
+          arn:aws:lambda:eu-south-1:344740472567:function:createPullRequest\",\n \
+          \           \"Payload\": { \"branch.$\": \"$.branch\" }\n          },\n\
+          \        \"ResultPath\": \"$.taskResult\",\n        \"Retry\":\n       \
+          \   [\n            {\n              \"ErrorEquals\":\n                [\n\
+          \                  \"Lambda.ServiceException\",\n                  \"Lambda.AWSLambdaException\"\
+          ,\n                  \"Lambda.SdkClientException\",\n                  \"\
+          Lambda.TooManyRequestsException\"\n                ],\n              \"\
+          IntervalSeconds\": 1,\n              \"MaxAttempts\": 3,\n             \
+          \ \"BackoffRate\": 2,\n              \"JitterStrategy\": \"FULL\"\n    \
+          \        }\n          ],\n        \"Next\": \"Ending\"\n      },\n    \"\
+          SendEmail\":\n      {\n        \"Type\": \"Task\",\n        \"Resource\"\
+          : \"arn:${AWS::Partition}:states:::lambda:invoke.waitForTaskToken\",\n \
+          \       \"Parameters\":\n          {\n            \"Payload\":\n       \
+          \       {\n                \"ExecutionContext.$\": \"$$\",\n           \
+          \     \"APIGatewayEndpoint\": \"https://${ExecutionApi}.execute-api.${AWS::Region}.amazonaws.com/states\"\
+          ,\n                \"Report.$\": \"$.taskResult.Payload.body\"\n       \
+          \       },\n            \"FunctionName\": \"arn:aws:lambda:eu-south-1:344740472567:function:sendEmail\"\
+          \n          },\n        \"ResultPath\": \"$.mailInfo\",\n        \"Retry\"\
+          :\n          [\n            {\n              \"ErrorEquals\":\n        \
+          \        [\n                  \"Lambda.ServiceException\",\n           \
+          \       \"Lambda.AWSLambdaException\",\n                  \"Lambda.SdkClientException\"\
+          ,\n                  \"Lambda.TooManyRequestsException\"\n             \
+          \   ],\n              \"IntervalSeconds\": 1,\n              \"MaxAttempts\"\
+          : 3,\n              \"BackoffRate\": 2,\n              \"JitterStrategy\"\
+          : \"FULL\"\n            }\n          ],\n        \"Next\": \"ManualApprovalChoiceState\"\
+          \n      },\n    \"ManualApprovalChoiceState\":\n      {\n        \"Type\"\
+          : \"Choice\",\n        \"Choices\":\n          [\n            {\n      \
+          \        \"Variable\": \"$.mailInfo.Status\",\n              \"StringEquals\"\
+          : \"Approved!\",\n              \"Next\": \"HandleReport\"\n           \
+          \ },\n            {\n              \"Variable\": \"$.mailInfo.Status\",\n\
+          \              \"StringEquals\": \"Rejected!\",\n              \"Next\"\
+          : \"FailState\"\n            }\n          ]\n      },\n    \"Ending\": {\
+          \ \"Type\": \"Pass\", \"End\": true },\n    \"UnknownState\":\n      {\n\
+          \        \"Type\": \"Fail\",\n        \"Error\": \"UnknownBuildStatus\"\
+          ,\n        \"Cause\": \"The build returned an unknown status.\"\n      },\n\
+          \    \"FailState\":\n      {\n        \"Type\": \"Fail\",\n        \"Error\"\
+          : \"Pipeline failed\",\n        \"Cause\": \"The pipeline failed due to\
+          \ user's choice\"\n      }\n  }\n}\n"
+      RoleArn:
+        Fn::GetAtt:
+        - StepFunctionRole
+        - Arn
+  StepFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - states.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonS3ObjectLambdaExecutionRolePolicy
+      - arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess
+      - arn:aws:iam::aws:policy/AWSCodeCommitFullAccess
+      - arn:aws:iam::aws:policy/AWSLambda_FullAccess
+      - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+      - arn:aws:iam::aws:policy/AWSLambdaExecute
+      - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+  ExecutionApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: Human approval endpoint
+      Description: HTTP Endpoint backed by API Gateway and Lambda
+      FailOnWarnings: true
+  ExecutionMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaApprovalFunction.Arn}/invocations
+        IntegrationResponses:
+        - StatusCode: 302
+          ResponseParameters:
+            method.response.header.Location: integration.response.body.headers.Location
+        RequestTemplates:
+          application/json: "{\n  \"body\" : $input.json('$'),\n  \"headers\": {\n\
+            \    #foreach($header in $input.params().header.keySet())\n    \"$header\"\
+            : \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end\n\
+            \n    #end\n  },\n  \"method\": \"$context.httpMethod\",\n  \"params\"\
+            : {\n    #foreach($param in $input.params().path.keySet())\n    \"$param\"\
+            : \"$util.escapeJavaScript($input.params().path.get($param))\" #if($foreach.hasNext),#end\n\
+            \n    #end\n  },\n  \"query\": {\n    #foreach($queryParam in $input.params().querystring.keySet())\n\
+            \    \"$queryParam\": \"$util.escapeJavaScript($input.params().querystring.get($queryParam))\"\
+            \ #if($foreach.hasNext),#end\n\n    #end\n  }  \n}\n"
+      ResourceId:
+        Ref: ExecutionResource
+      RestApiId:
+        Ref: ExecutionApi
+      MethodResponses:
+      - StatusCode: 302
+        ResponseParameters:
+          method.response.header.Location: true
+  ExecutionResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId:
+        Ref: ExecutionApi
+      ParentId:
+        Fn::GetAtt:
+        - ExecutionApi
+        - RootResourceId
+      PathPart: execution
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+    - ExecutionMethod
+    Properties:
+      RestApiId:
+        Ref: ExecutionApi
+      StageName: DevStage
+  ApiGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn:
+        Fn::GetAtt:
+        - ApiGatewayCloudWatchLogsRole
+        - Arn
+  ApiGatewayCloudWatchLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - apigateway.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: ApiGatewayLogsPolicy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource:
+              Fn::Sub: arn:${AWS::Partition}:logs:*:*:*
+  ExecutionApiStage:
+    DependsOn:
+    - ApiGatewayAccount
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId:
+        Ref: ApiDeployment
+      MethodSettings:
+      - DataTraceEnabled: true
+        HttpMethod: '*'
+        LoggingLevel: INFO
+        ResourcePath: /*
+      RestApiId:
+        Ref: ExecutionApi
+      StageName: states
+  SNSHumanApprovalEmailTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Endpoint:
+          Fn::Sub: ${Email}
+        Protocol: email
+Outputs:
+  CodeBuildInstanceOutput:
+    Description: Instance of the CodeBuild project
+    Value:
+      Ref: CodeBuildInstance
+  CodePipelineInstanceOutput:
+    Description: Instance of the Pipeline
+    Value:
+      Ref: PipelineInstance
+  StateMachineInstanceOutput:
+    Description: Instance of the feedback state machine
+    Value:
+      Ref: FeedbackStateMachine
+  SNSHumanApprovalEmailTopicArn:
+    Description: ARN of the SNS Topic for human approval emails
+    Value:
+      Ref: SNSHumanApprovalEmailTopic
+    Export:
+      Name: SNSHumanApprovalEmailTopicArn

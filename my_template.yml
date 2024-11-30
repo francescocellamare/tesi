@@ -1,0 +1,1276 @@
+# Template information
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template for CloudFormation demo example
+
+# It allows users to pass values at runtime when creating or updating a stack.
+Parameters:
+  IAMUser:
+    Type: String
+    Description: The ARN of the IAM user (e.g., arn:aws:iam::123123123123:user/myuid).
+    Default: arn:aws:iam::344740472567:user/f.cellamare
+
+  Email:
+    Type: String
+    AllowedPattern: "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"
+    ConstraintDescription: Must be a valid email address.
+    Default: francesco.pio.cellamare28@gmail.com
+
+  # ==== CodeCommit ====
+  BranchName:
+    Description: CodeCommit branch name
+    Type: String
+    Default: master
+  RepositoryName:
+    Description: CodeComit repository name
+    Type: String
+    Default: SpringProjectRepository
+
+  # ==== CodeBuild ====
+  ProjectName:
+    Description: CodeBuild project name
+    Type: String
+    Default: DemoCodeBuildCloudFormation
+
+  # # ==== CodeDeploy ====
+  # ApplicationName:
+  #   Description: CodeDeploy application name
+  #   Type: String
+  #   Default: DemoApplicationCloudFormation
+  # DeploymentGroupName:
+  #   Description: Deployment group name
+  #   Type: String
+  #   Default: DemoDeploymentGroupCloudFormation
+  # BetaFleet: # unused
+  #   Description: Fleet configured in CodeDeploy
+  #   Type: String
+  #   Default: DemoFleetCloudFormation
+
+  # # ==== EC2 ====
+  # InstanceName:
+  #   Description: EC2 instance name
+  #   Type: String
+  #   Default: DemoEC2CloudFormation
+  # InstanceTypeValue:
+  #   Description: EC2 instance Type
+  #   Type: String
+  #   Default: t3.micro
+  #   AllowedValues:
+  #     - t3.micro
+  #   ConstraintDescription: Must be a valid EC2 instance type
+
+  # # ==== Network ====
+  # VPCName:
+  #   Description: VPC name
+  #   Type: String
+  #   Default: DemoVPCCloudFormation
+  # SubnetName:
+  #   Description: Subnet name
+  #   Type: String
+  #   Default: DemoSubnetCloudFormation
+  # IgwName:
+  #   Description: Internet Gateway name
+  #   Type: String
+  #   Default: DemoIgwCloudFormation
+  # RoutingTableName:
+  #   Description: Routing table name
+  #   Type: String
+  #   Default: DemoRoutingTableCloudFormation
+
+  # ==== CodePipeline ====
+  PipelineName:
+    Description: CodePipeline pipeline name
+    Type: String
+    Default: DemoPipeline
+
+  # ==== Bucket ====
+  BucketName:
+    Description: Bucket name
+    Type: String
+    Default: demo-bucket-cloudformation
+
+  # # ==== NetworkInterface ====
+  # MyIPAddress:
+  #   Description: The IP address allowed to access SSH and HTTP ports (e.g., your IP)
+  #   Type: String
+  #   Default: 0.0.0.0/0 # Replace with a specific IP for more security, e.g., "192.0.2.0/32"
+  #   AllowedPattern: (\d{1,3}\.){3}\d{1,3}/\d{1,2}
+  #   ConstraintDescription: Must be a valid IP address with CIDR notation (e.g., x.x.x.x/32).
+
+Resources:
+  # # ==== network section ====
+
+  # # creating a VPC 
+  # VPCInstance:
+  #   Type: AWS::EC2::VPC
+  #   Properties:
+  #     CidrBlock: 10.0.0.0/24    # address pool
+  #     EnableDnsSupport: true
+  #     EnableDnsHostnames: true  # expose public dns  
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref VPCName
+
+  # # creating a Subnet and linking it to the VPC
+  # SubnetInstance:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref VPCInstance
+  #     CidrBlock: 10.0.0.0/24    # address pool
+  #     MapPublicIpOnLaunch: true # assign public IP to instances in this subnet
+  #     AvailabilityZone: !Select
+  #       - 0
+  #       - !GetAZs ''
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref SubnetName
+
+  # # creating a Internet Gateway
+  # IgwInstance:
+  #   Type: AWS::EC2::InternetGateway
+  #   Properties:
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref IgwName
+
+  # # attaching the Internet Gateway to the VPC
+  # AttachGateway:
+  #   Type: AWS::EC2::VPCGatewayAttachment
+  #   Properties:
+  #     VpcId: !Ref VPCInstance
+  #     InternetGatewayId: !Ref IgwInstance
+
+  # # creating a routing table attached to the VPC 
+  # RouteTableInstance:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId: !Ref VPCInstance
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref RoutingTableName
+
+  # # exposing a route inside the subnet 
+  # PublicRoute:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     RouteTableId: !Ref RouteTableInstance
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     GatewayId: !Ref IgwInstance
+
+  # # associate subnet to the routing table
+  # SubnetRouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId: !Ref SubnetInstance
+  #     RouteTableId: !Ref RouteTableInstance
+
+  # # security Group for SSH and HTTP Access
+  # MySecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     GroupDescription: Security group for SSH and HTTP access restricted to specified IP
+  #     VpcId: !Ref VPCInstance
+  #     SecurityGroupIngress:
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: !Ref MyIPAddress
+  #       - IpProtocol: tcp
+  #         FromPort: 80
+  #         ToPort: 80
+  #         CidrIp: !Ref MyIPAddress
+
+  # ================================================================================================
+
+  # # ==== EC2 section ====
+
+  # # image ids catalog: https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#AMICatalog:
+
+  # # link the instance to the role
+  # EC2InstanceProfile:
+  #   Type: AWS::IAM::InstanceProfile
+  #   Properties:
+  #     Roles:
+  #       - !Ref EC2InstanceRole
+
+  # # IAM Role for EC2
+  # EC2InstanceRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: ec2.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy 
+  #       - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+  #     Path: /
+
+  # # EC2 instance declaration
+  # EC2Instance:
+  #   Type: AWS::EC2::Instance
+  #   Properties:
+  #     ImageId: ami-012d51171727a42bb
+  #     InstanceType: !Ref InstanceTypeValue
+  #     IamInstanceProfile: !Ref EC2InstanceProfile
+  #     NetworkInterfaces:
+  #       - AssociatePublicIpAddress: 'true'
+  #         DeviceIndex: '0'
+  #         SubnetId: !Ref SubnetInstance
+  #         GroupSet:
+  #           - !Ref MySecurityGroup
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref InstanceName
+
+  # ================================================================================================
+
+  # # ==== CodeDeploy section ====
+
+  # # IAM Role
+  # CodeDeployServiceRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: codedeploy.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+  #     Path: /
+
+  # # declaring the application instance
+  # CodeDeployApplicationInstance:
+  #   Type: AWS::CodeDeploy::Application
+  #   Properties:
+  #     ApplicationName: !Ref ApplicationName
+  #     ComputePlatform: Server
+
+  # # declaring general information about deployment
+  # CodeDeployDeploymentGroupInstance:
+  #   Type: AWS::CodeDeploy::DeploymentGroup
+  #   DependsOn: CodeDeployApplicationInstance
+  #   Properties:
+  #     ApplicationName: !Ref ApplicationName 
+  #     DeploymentGroupName: !Ref DeploymentGroupName
+  #     ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn # this should be changed to !Ref CodeDeployServiceRole (?)
+  #     DeploymentStyle:
+  #       DeploymentType: IN_PLACE
+  #       DeploymentOption: WITHOUT_TRAFFIC_CONTROL
+  #     DeploymentConfigName: CodeDeployDefault.OneAtATime
+  #     Ec2TagFilters:
+  #       - Key: Name
+  #         Value: !Ref InstanceName    # application must be ran on this instance with (key, name) matching
+  #         Type: KEY_AND_VALUE
+  #     AutoRollbackConfiguration:
+  #       Enabled: true
+  #       Events:
+  #         - DEPLOYMENT_FAILURE
+  #         - DEPLOYMENT_STOP_ON_REQUEST
+
+  # ================================================================================================
+
+  # ==== CodePipeline section ====
+
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSStepFunctionsConsoleFullAccess
+        - arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess
+      Policies:
+        - PolicyName: CodePipelinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codecommit:*
+                  - s3:*
+                  - codebuild:*
+                  - codedeploy:*
+                Resource:
+                  - arn:aws:codecommit:eu-south-1:344740472567:DemoRepositoryCloudFormation
+                  - arn:aws:s3:::demo-artifact-store-cloudformation
+                  - arn:aws:s3:::demo-artifact-store-cloudformation/*
+                  - '*'
+
+  # Create CodePipeline
+  PipelineInstance:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Ref PipelineName
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactStoreBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeCommit
+                Version: '1'
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                OutputArtifactFormat: CODEBUILD_CLONE_REF
+                RepositoryName: !Ref RepositoryName
+                BranchName: !Ref BranchName
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: DeployOutput
+              Configuration:
+                ProjectName: !Ref ProjectName
+              RunOrder: 2
+              Namespace: BuildVariables
+        - Name: StateMachine
+          Actions:
+            - Name: FeedbackStateMachine
+              ActionTypeId:
+                Category: Invoke
+                Owner: AWS
+                Provider: StepFunctions
+                Version: '1'
+              Configuration:
+                StateMachineArn: !GetAtt FeedbackStateMachine.Arn
+                Input: !Sub |
+                          {
+                            "bucketname": "${BucketName}",
+                            "key": "${PipelineName}/DeployOutp/",
+                            "buildResult": "#{BuildVariables.BUILD_STATUS}",
+                            "branch": "${BranchName}"
+                          }
+              InputArtifacts:
+                - Name: DeployOutput
+              RunOrder: 3
+        # - Name: Deploy
+        #   Actions:
+        #     - Name: DeployAction
+        #       ActionTypeId:
+        #         Category: Deploy
+        #         Owner: AWS
+        #         Provider: CodeDeploy
+        #         Version: '1'
+        #       InputArtifacts:
+        #         - Name: DeployOutput
+        #       Configuration:
+        #         ApplicationName: !Ref ApplicationName
+        #         DeploymentGroupName: !Ref DeploymentGroupName
+        #       RunOrder: 1
+  # ================================================================================================
+
+  # ==== S3 buckets section ====
+
+  # Bucket which is going to contain Source and Deploy output
+  ArtifactStoreBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      Tags:
+        - Key: Name
+          Value: !Ref BucketName
+      AccessControl: Private
+
+  ArtifactStoreBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtifactStoreBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: FullAccessForIAMUser
+            Effect: Allow
+            Action: s3:*
+            Resource:
+              - !Sub arn:aws:s3:::${BucketName}
+              - !Sub arn:aws:s3:::${BucketName}/*
+            Principal:
+              AWS: !Ref IAMUser
+
+    # PackageStoreBucket:
+  #   Type: AWS::S3::Bucket
+  #   Properties:
+  #     BucketName: demo-package-bucket
+  #     Tags:
+  #       - Key: Name
+  #         Value: demo-package-bucket
+  #     AccessControl: Private
+
+  # PackageStoreBucketPolicy:
+  #   Type: AWS::S3::BucketPolicy
+  #   Properties:
+  #     Bucket: !Ref PackageStoreBucket
+  #     PolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Sid: FullAccessForIAMUser
+  #           Effect: Allow
+  #           Action: s3:*
+  #           Resource:
+  #             - !Sub arn:aws:s3:::${demo-package-bucket}
+  #             - !Sub arn:aws:s3:::${demo-package-bucket}/*
+  #           Principal:
+  #             AWS: !Ref IAMUser
+
+  # ================================================================================================
+
+  # ==== CodeBuild section ====
+
+  # Project for first time build
+  CodeBuildInstance:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        EncryptionDisabled: true
+        OverrideArtifactName: true
+        Type: CODEPIPELINE
+      BadgeEnabled: false # publicly accessible URL for the project's build
+      ConcurrentBuildLimit: '1' # max parallel builds
+      Description: Demo build stage inside the pipeline
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL # computation power type at https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codebuild-project-environment.html#cfn-codebuild-project-environment-certificate
+        Image: aws/codebuild/standard:7.0
+        Type: LINUX_CONTAINER
+      Name: !Ref ProjectName
+      QueuedTimeoutInMinutes: '5' # [5, 480]
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Source:
+        Type: CODEPIPELINE
+      Tags:
+        - Key: Name
+          Value: !Ref ProjectName
+
+  # IAM Role
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodeCommitFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess
+      Path: /
+      Policies:
+        - PolicyName: CodeBuildPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                Resource:
+                  - arn:aws:codecommit:eu-south-1:344740472567:DemoRepositoryCloudFormation
+                  - '*'
+
+  CodeBuildFeedbackInstance:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: S3
+        Location: !Ref ArtifactStoreBucket
+        Path: build-artifacts/
+        Packaging: ZIP
+        Name: FeedbackBuildArtifacts.zip
+      ConcurrentBuildLimit: '1'
+      Description: Build stage inside the state machine
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL # computation power type at https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codebuild-project-environment.html#cfn-codebuild-project-environment-certificate
+        Image: aws/codebuild/standard:7.0
+        Type: LINUX_CONTAINER
+      Name: FeedbackBuildProject
+      QueuedTimeoutInMinutes: '5' # [5, 480]
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Source:
+        Type: CODECOMMIT
+        Location: !Sub "https://git-codecommit.eu-south-1.amazonaws.com/v1/repos/SpringProjectRepository"  # Raplace to make it dynamic
+        BuildSpec: !Sub |
+          version: 0.2
+          env:
+            shell: /bin/bash
+
+          phases:
+            install:
+              on-failure: CONTINUE
+              commands:
+                - echo "Setting JAVA_HOME to Java 17"
+                - export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))  # This sets JAVA_HOME
+                - echo $JAVA_HOME
+                - echo "Installing dependencies"
+                - echo "Checking Java version"
+                - java -version
+                - mvn -v
+
+            pre_build:
+              on-failure: CONTINUE
+              commands:
+                - echo "Starting the build process"
+                - mvn clean validate -q
+
+            build:
+              on-failure: CONTINUE
+              commands:
+                - echo "Compiling the Spring Boot project"
+                - mvn clean compile -q
+
+            post_build:
+              on-failure: CONTINUE
+              commands:
+                - echo "Running the test suite"
+                - mvn test -q
+                - echo "Tests completed"
+                - echo "End"
+          artifacts:
+            files:
+              - target/surefire-reports/**
+            discard-paths: yes 
+        # SourceVersion: "refs/heads/master"
+      Tags:
+        - Key: Name
+          Value: FeedbackBuildProject
+  # ================================================================================================
+
+  # ==== Lambda section ====
+
+  # Lambda role very generic
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+        - arn:aws:iam::aws:policy/AWSCodeCommitFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+
+  # retrieve the report.txt
+  CreateReport:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code: ./lambdaCode/createReport
+      Description: State to create the report from the previus build phase, both commit one and tests execution one will be created
+      FunctionName: createReport
+      Handler: index.createReport
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.10
+      Timeout: 10
+
+  # create the final pull request
+  CreatePullRequest:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code: ./lambdaCode/createPullRequest
+      Description: State to create the final pull request if everything succeeded
+      FunctionName: createPullRequest
+      Handler: index.createPullRequest
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.10
+      Timeout: 25
+      Environment:
+        Variables:
+          REPOSITORY_NAME: !Ref RepositoryName
+
+
+  # generate test suite
+  HandleReport:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code: ./lambdaCode/handleReport
+      Description: State to generate test suite for the given .class file
+      FunctionName: handleReport
+      Handler: index.handleReport
+      Role: !GetAtt LambdaRole.Arn
+      Layers:
+        - arn:aws:lambda:eu-south-1:344740472567:layer:stepfunctionLambdaLayer:2
+      Runtime: python3.10
+      Environment:
+        Variables:
+          STACK_NAME: !Ref AWS::StackName
+      Timeout: 90
+
+  LambdaApprovalFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: ./lambdaCode/approval
+      Description: Lambda function that callback to AWS Step Functions
+      FunctionName: LambdaApprovalFunction
+      Handler: index.lambda_handler
+      Role: !GetAtt "LambdaApiGatewayIAMRole.Arn"
+      Runtime: python3.10
+
+  # lambda function to create and send message
+  SendEmail:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: index.sendEmail
+      Role: !GetAtt LambdaSendEmailExecutionRole.Arn
+      Runtime: python3.10
+      FunctionName: sendEmail
+      Code: ./lambdaCode/sendEmail
+      Timeout: 25
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref SNSHumanApprovalEmailTopic
+
+          # lambda function to create and send message
+  SendPullRequestEmail:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: index.sendPullRequestEmail
+      Role: !GetAtt LambdaSendEmailExecutionRole.Arn
+      Runtime: python3.10
+      FunctionName: sendPullRequestEmail
+      Code: ./lambdaCode/sendPullRequestEmail
+      Timeout: 25
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref SNSHumanApprovalEmailTopic
+          REPOSITORY_NAME: !Ref RepositoryName
+
+  # allows the API gateway to call the lambda (the post inside the integration) 
+  LambdaApiGatewayInvoke:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !GetAtt "LambdaApprovalFunction.Arn"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ExecutionApi}/*"
+
+  # IAM role for the lambda response handling to let produce log and interact with StepFunction
+  LambdaApiGatewayIAMRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - "sts:AssumeRole"
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+      Policies:
+        - PolicyName: CloudWatchLogsPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:*"
+                Resource: !Sub "arn:${AWS::Partition}:logs:*:*:*"
+        - PolicyName: StepFunctionsPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "states:SendTaskFailure"
+                  - "states:SendTaskSuccess"
+                Resource: "*"
+
+  LambdaStateMachineExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: InvokeCallbackLambda
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource:
+                  - !Sub "${SendEmail.Arn}"
+
+
+  # IAM role to let the lambda send emails using SNS
+  LambdaSendEmailExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: CloudWatchLogsPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: !Sub "arn:${AWS::Partition}:logs:*:*:*"
+        - PolicyName: SNSSendEmailPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "SNS:Publish"
+                Resource:
+                  - !Sub "${SNSHumanApprovalEmailTopic}"
+        - PolicyName: S3FullAccessPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:*"
+                Resource:
+                  - "arn:aws:s3:::*"
+
+  # ================================================================================================
+
+  # ==== StepFunction section ====
+  FeedbackStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: FeedbackStateMachine
+      DefinitionString: !Sub |
+        {
+          "Comment": "State machine to handle test generation with feedback",
+          "StartAt": "CreateReport",
+          "States": {
+            "CreateReport":
+              {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters":
+                  {
+                    "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:createReport",
+                    "Payload": { "bucketname.$": "$.bucketname", "key.$": "$.key", "branch.$": "$.branch" }
+                  },
+                "ResultSelector": { "Payload.$": "$.Payload" },
+                "ResultPath": "$.taskResult",
+                "Next": "BuildResultChoice"
+              },
+            "BuildResultChoice":
+              {
+                "Type": "Choice",
+                "Choices":
+                  [
+                    {
+                      "Variable": "$.buildResult",
+                      "StringEquals": "SUCCEEDED",
+                      "Next": "HandleReport"
+                    },
+                    {
+                      "Variable": "$.buildResult",
+                      "StringEquals": "FAILED",
+                      "Next": "SendEmail"
+                    }
+                  ],
+                "Default": "UnknownState"
+              },
+            "HandleReport":
+              {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters":
+                  {
+                    "Payload.$": "$",
+                    "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:handleReport"
+                  },
+                "ResultSelector": { "Payload.$": "$.Payload" },
+                "ResultPath": "$.taskResult",
+                "Retry":
+                  [
+                    {
+                      "ErrorEquals":
+                        [
+                          "Lambda.ServiceException",
+                          "Lambda.AWSLambdaException",
+                          "Lambda.SdkClientException",
+                          "Lambda.TooManyRequestsException"
+                        ],
+                      "IntervalSeconds": 1,
+                      "MaxAttempts": 3,
+                      "BackoffRate": 2,
+                      "JitterStrategy": "FULL"
+                    }
+                  ],
+                "Next": "StartBuild"
+              },
+            "StartBuild": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::codebuild:startBuild.sync",
+                "Parameters": {
+                  "ProjectName": "FeedbackBuildProject",
+                  "SourceVersion.$": "$.taskResult.Payload.body.branch"
+                },
+                "ResultPath": "$.taskResult",
+                "Next": "Patch",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.TaskFailed"],
+                    "ResultPath": "$.taskResult",
+                    "Next": "ParseCause"
+                  }
+                ]
+              },
+              "ParseCause": {
+                  "Type": "Pass",
+                  "Parameters": {
+                    "bucketname.$": "$.bucketname",
+                    "key.$": "$.key",
+                    "buildResult.$": "$.buildResult",
+                    "Cause.$": "States.StringToJson($.taskResult.Cause)"
+                  },
+                  "ResultPath": "$.parsedCause",
+                  "Next": "ExtractSourceVersion"
+                },
+                "ExtractSourceVersion": {
+                  "Type": "Pass",
+                  "Parameters": {
+                    "branch.$": "$.parsedCause.Cause.Build.SourceVersion"
+                  },
+                  "ResultPath": "$.branch",
+                  "Next": "SetFailedResult"
+                },
+              "SetFailedResult": {
+                "Type": "Pass",
+                "Parameters": {
+                  "bucketname.$": "$.bucketname",
+                  "key.$": "$.key",
+                  "buildResult": "FAILED",
+                  "branch.$": "$.branch.branch"
+                },
+                "ResultPath": "$",
+                "Next": "FinalBuild"
+              },
+              "Patch": {
+                "Type": "Pass",
+                "Parameters": {
+                  "bucketname.$": "$.bucketname",
+                  "key.$": "$.key",
+                  "buildResult.$": "$.taskResult.Build.BuildStatus",
+                  "branch.$": "$.taskResult.Build.SourceVersion"
+                },
+                "ResultPath": "$",
+                "Next": "FinalBuild"
+              },
+              "FinalBuild": {
+                "Type": "Choice",
+                  "Choices":
+                    [
+                      {
+                        "Variable": "$.buildResult",
+                        "StringEquals": "SUCCEEDED",
+                        "Next": "SendPullRequestEmail"
+                      },
+                      {
+                        "Variable": "$.buildResult",
+                        "StringEquals": "FAILED",
+                        "Next": "CreateReport"
+                      }
+                    ],
+                  "Default": "UnknownState"
+              },
+              "SendPullRequestEmail":
+              {
+                "Type": "Task",
+                "Resource": "arn:${AWS::Partition}:states:::lambda:invoke.waitForTaskToken",
+                "Parameters":
+                  {
+                    "Payload":
+                      {
+                        "ExecutionContext.$": "$$",
+                        "APIGatewayEndpoint": "https://${ExecutionApi}.execute-api.${AWS::Region}.amazonaws.com/states",
+                        "branch.$": "$.branch"
+                      },
+                    "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:sendPullRequestEmail"
+                  },
+                "ResultPath": "$.mailInfo",
+                "Retry":
+                  [
+                    {
+                      "ErrorEquals":
+                        [
+                          "Lambda.ServiceException",
+                          "Lambda.AWSLambdaException",
+                          "Lambda.SdkClientException",
+                          "Lambda.TooManyRequestsException"
+                        ],
+                      "IntervalSeconds": 1,
+                      "MaxAttempts": 3,
+                      "BackoffRate": 2,
+                      "JitterStrategy": "FULL"
+                    }
+                  ],
+                "Next": "ApprovalPullRequest"
+              },
+              "ApprovalPullRequest":
+              {
+                "Type": "Choice",
+                "Choices":
+                  [
+                    {
+                      "Variable": "$.mailInfo.Status",
+                      "StringEquals": "Approved!",
+                      "Next": "CreatePullRequest"
+                    },
+                    {
+                      "Variable": "$.mailInfo.Status",
+                      "StringEquals": "Rejected!",
+                      "Next": "FailState"
+                    }
+                  ]
+              },
+              "CreatePullRequest":
+              {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters":
+                  {
+                    "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:createPullRequest",
+                    "Payload": { "branch.$": "$.branch" }
+                  },
+                "ResultPath": "$.taskResult",
+                "Retry":
+                  [
+                    {
+                      "ErrorEquals":
+                        [
+                          "Lambda.ServiceException",
+                          "Lambda.AWSLambdaException",
+                          "Lambda.SdkClientException",
+                          "Lambda.TooManyRequestsException"
+                        ],
+                      "IntervalSeconds": 1,
+                      "MaxAttempts": 3,
+                      "BackoffRate": 2,
+                      "JitterStrategy": "FULL"
+                    }
+                  ],
+                "Next": "Ending"
+              },
+            "SendEmail":
+              {
+                "Type": "Task",
+                "Resource": "arn:${AWS::Partition}:states:::lambda:invoke.waitForTaskToken",
+                "Parameters":
+                  {
+                    "Payload":
+                      {
+                        "ExecutionContext.$": "$$",
+                        "APIGatewayEndpoint": "https://${ExecutionApi}.execute-api.${AWS::Region}.amazonaws.com/states",
+                        "Report.$": "$.taskResult.Payload.body"
+                      },
+                    "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:sendEmail"
+                  },
+                "ResultPath": "$.mailInfo",
+                "Retry":
+                  [
+                    {
+                      "ErrorEquals":
+                        [
+                          "Lambda.ServiceException",
+                          "Lambda.AWSLambdaException",
+                          "Lambda.SdkClientException",
+                          "Lambda.TooManyRequestsException"
+                        ],
+                      "IntervalSeconds": 1,
+                      "MaxAttempts": 3,
+                      "BackoffRate": 2,
+                      "JitterStrategy": "FULL"
+                    }
+                  ],
+                "Next": "ManualApprovalChoiceState"
+              },
+            "ManualApprovalChoiceState":
+              {
+                "Type": "Choice",
+                "Choices":
+                  [
+                    {
+                      "Variable": "$.mailInfo.Status",
+                      "StringEquals": "Approved!",
+                      "Next": "HandleReport"
+                    },
+                    {
+                      "Variable": "$.mailInfo.Status",
+                      "StringEquals": "Rejected!",
+                      "Next": "FailState"
+                    }
+                  ]
+              },
+            "Ending": { "Type": "Pass", "End": true },
+            "UnknownState":
+              {
+                "Type": "Fail",
+                "Error": "UnknownBuildStatus",
+                "Cause": "The build returned an unknown status."
+              },
+            "FailState":
+              {
+                "Type": "Fail",
+                "Error": "Pipeline failed",
+                "Cause": "The pipeline failed due to user's choice"
+              }
+          }
+        }
+      RoleArn: !GetAtt StepFunctionRole.Arn
+
+  StepFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - states.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonS3ObjectLambdaExecutionRolePolicy
+        - arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess
+        - arn:aws:iam::aws:policy/AWSCodeCommitFullAccess
+        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+        - arn:aws:iam::aws:policy/AWSLambdaExecute
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+
+  # # ================================================================================================
+
+  # ====  API gateway section ====
+  # Begin API Gateway Resources
+  # the actual RestApi component in AWS
+  ExecutionApi:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties:
+      Name: "Human approval endpoint"
+      Description: "HTTP Endpoint backed by API Gateway and Lambda"
+      FailOnWarnings: true
+
+  # API Gateway methods that define the parameters and body that clients must send in their requests.
+  ExecutionMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: NONE # no protection
+      HttpMethod: GET         # http method 
+      Integration:            # how the request is forwarded to the backend, in this case a lambda function
+        Type: AWS
+        IntegrationHttpMethod: POST   # the gateway will POST on the lambda
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaApprovalFunction.Arn}/invocations" # lambda uri
+        IntegrationResponses: 
+          - StatusCode: 302
+            ResponseParameters:
+              method.response.header.Location: "integration.response.body.headers.Location"
+        RequestTemplates:
+          application/json: | # converts http packet into a json object if it's an application/json one
+            {
+              "body" : $input.json('$'),
+              "headers": {
+                #foreach($header in $input.params().header.keySet())
+                "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
+
+                #end
+              },
+              "method": "$context.httpMethod",
+              "params": {
+                #foreach($param in $input.params().path.keySet())
+                "$param": "$util.escapeJavaScript($input.params().path.get($param))" #if($foreach.hasNext),#end
+
+                #end
+              },
+              "query": {
+                #foreach($queryParam in $input.params().querystring.keySet())
+                "$queryParam": "$util.escapeJavaScript($input.params().querystring.get($queryParam))" #if($foreach.hasNext),#end
+
+                #end
+              }  
+            }
+      ResourceId: !Ref ExecutionResource  #
+      RestApiId: !Ref ExecutionApi        # link to the API gateway model created
+      MethodResponses:
+        - StatusCode: 302
+          ResponseParameters:
+            method.response.header.Location: true
+
+
+  ExecutionResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref ExecutionApi
+      ParentId: !GetAtt "ExecutionApi.RootResourceId" # says that the parent is going to be the root '/'
+      PathPart: execution   # into the ExecutionApi the route /execution is going to be created 
+
+  # deploys an API Gateway RestApi resource to a stage so that clients can call the API over the internet. The stage acts as an environment.
+  ApiDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    DependsOn:
+      - ExecutionMethod
+    Properties:
+      RestApiId: !Ref ExecutionApi
+      StageName: DevStage
+
+  # configuring AWS Cloud Watch
+  ApiGatewayAccount:
+    Type: 'AWS::ApiGateway::Account'
+    Properties:
+      CloudWatchRoleArn: !GetAtt "ApiGatewayCloudWatchLogsRole.Arn"
+  
+  # IAM role for Cloud Watch
+  ApiGatewayCloudWatchLogsRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: ApiGatewayLogsPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:*"
+                Resource: !Sub "arn:${AWS::Partition}:logs:*:*:*"
+
+  ExecutionApiStage:
+    DependsOn:
+      - ApiGatewayAccount
+    Type: 'AWS::ApiGateway::Stage'
+    Properties:
+      DeploymentId: !Ref ApiDeployment
+      MethodSettings:
+        - DataTraceEnabled: true
+          HttpMethod: '*'
+          LoggingLevel: INFO
+          ResourcePath: /*
+      RestApiId: !Ref ExecutionApi
+      StageName: states
+
+  # ================================================================================================
+
+  # ====  SNS section ====
+
+  SNSHumanApprovalEmailTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        -
+           Endpoint: !Sub ${Email}
+           Protocol: email
+  
+Outputs:
+  # VPCId:
+  #   Description: VPC ID created for the CloudFormation demo
+  #   Value: !Ref VPCInstance
+
+  # SubnetId:
+  #   Description: Subnet ID created and associated with the VPC
+  #   Value: !Ref SubnetInstance
+
+  # IgwId:
+  #   Description: ID of the Internet Gateway attached to the VPC
+  #   Value: !Ref IgwInstance
+
+  # EC2InstancePublicIP:
+  #   Description: Public IP of the EC2 instance
+  #   Value: !GetAtt EC2Instance.PublicIp
+
+  # EC2InstanceID:
+  #   Description: ID of the EC2 instance
+  #   Value: !Ref EC2Instance
+
+  # EC2InstanceRole:
+  #   Description: IAM Role attached to the EC2 instance
+  #   Value: !Ref EC2InstanceRole
+
+  # CodeDeployApplicationName:
+  #   Description: CodeDeploy Application Name
+  #   Value: !Ref ApplicationName
+
+  # CodeDeployDeploymentGroup:
+  #   Description: CodeDeploy Deployment Group Name
+  #   Value: !Ref DeploymentGroupName
+
+  CodeBuildInstanceOutput:
+    Description: Instance of the CodeBuild project
+    Value: !Ref CodeBuildInstance
+
+  CodePipelineInstanceOutput:
+    Description: Instance of the Pipeline
+    Value: !Ref PipelineInstance
+
+  StateMachineInstanceOutput:
+    Description: Instance of the feedback state machine
+    Value: !Ref FeedbackStateMachine
+
+  SNSHumanApprovalEmailTopicArn:
+    Description: ARN of the SNS Topic for human approval emails
+    Value: !Ref SNSHumanApprovalEmailTopic
+    Export:
+      Name: SNSHumanApprovalEmailTopicArn
+
+  # SecurityGroupID:
+  #   Description: Security Group ID associated with the EC2 instance
+  #   Value: !Ref MySecurityGroup
+
+  # RouteTableID:
+  #   Description: Route Table ID associated with the VPC
+  #   Value: !Ref RouteTableInstance
+
+  # MyIPAddress:
+  #   Description: The IP address allowed to access SSH and HTTP ports
+  #   Value: !Ref MyIPAddress
