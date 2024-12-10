@@ -31,6 +31,12 @@ Parameters:
     Type: String
     Default: DemoCodeBuildCloudFormation
 
+  # ==== Event Bus ====
+  EventBusName:
+    Description: Event bus name
+    Type: String
+    Default: DemoEventBusCloudFormation
+
   # # ==== CodeDeploy ====
   # ApplicationName:
   #   Description: CodeDeploy application name
@@ -277,6 +283,52 @@ Resources:
 
   # ==== CodePipeline section ====
 
+  EventRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName: eb-pipeline-execution
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Effect: Allow
+                Action: codepipeline:StartPipelineExecution
+                Resource: !Join [ '', [ 'arn:aws:codepipeline:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref PipelineName ] ] 
+
+  EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Rule to filter out pull request"
+      EventPattern:
+        source:
+          - aws.codecommit
+        detail-type:
+          - 'CodeCommit Pull Request State Change'
+        resources:
+          - !Join [ '', [ 'arn:aws:codecommit:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref RepositoryName ] ]
+        detail:
+          event: 
+            anything-but: 
+              - "pullRequestMergeStatusUpdated"
+      Targets:
+        -
+          Arn: 
+            !Join [ '', [ 'arn:aws:codepipeline:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref PipelineName ] ]
+          RoleArn: !GetAtt EventRole.Arn
+          Id: codepipeline-PipelineName
+
   CodePipelineServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -331,6 +383,7 @@ Resources:
                 OutputArtifactFormat: CODEBUILD_CLONE_REF
                 RepositoryName: !Ref RepositoryName
                 BranchName: !Ref BranchName
+                PollForSourceChanges: false
               RunOrder: 1
         - Name: Build
           Actions:
