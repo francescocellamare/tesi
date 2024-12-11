@@ -1,8 +1,6 @@
-# Template information
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Template for CloudFormation demo example
 
-# It allows users to pass values at runtime when creating or updating a stack.
 Parameters:
   IAMUser:
     Type: String
@@ -37,7 +35,7 @@ Parameters:
     Type: String
     Default: DemoEventBusCloudFormation
 
-  # # ==== CodeDeploy ====
+  # ==== CodeDeploy ====
   # ApplicationName:
   #   Description: CodeDeploy application name
   #   Type: String
@@ -51,7 +49,7 @@ Parameters:
   #   Type: String
   #   Default: DemoFleetCloudFormation
 
-  # # ==== EC2 ====
+  # ==== EC2 ====
   # InstanceName:
   #   Description: EC2 instance name
   #   Type: String
@@ -64,7 +62,7 @@ Parameters:
   #     - t3.micro
   #   ConstraintDescription: Must be a valid EC2 instance type
 
-  # # ==== Network ====
+  # ==== Network ====
   # VPCName:
   #   Description: VPC name
   #   Type: String
@@ -94,7 +92,7 @@ Parameters:
     Type: String
     Default: demo-bucket-cloudformation
 
-  # # ==== NetworkInterface ====
+  # ==== NetworkInterface ====
   # MyIPAddress:
   #   Description: The IP address allowed to access SSH and HTTP ports (e.g., your IP)
   #   Type: String
@@ -103,185 +101,8 @@ Parameters:
   #   ConstraintDescription: Must be a valid IP address with CIDR notation (e.g., x.x.x.x/32).
 
 Resources:
-  # # ==== network section ====
-
-  # # creating a VPC 
-  # VPCInstance:
-  #   Type: AWS::EC2::VPC
-  #   Properties:
-  #     CidrBlock: 10.0.0.0/24    # address pool
-  #     EnableDnsSupport: true
-  #     EnableDnsHostnames: true  # expose public dns  
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Ref VPCName
-
-  # # creating a Subnet and linking it to the VPC
-  # SubnetInstance:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref VPCInstance
-  #     CidrBlock: 10.0.0.0/24    # address pool
-  #     MapPublicIpOnLaunch: true # assign public IP to instances in this subnet
-  #     AvailabilityZone: !Select
-  #       - 0
-  #       - !GetAZs ''
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Ref SubnetName
-
-  # # creating a Internet Gateway
-  # IgwInstance:
-  #   Type: AWS::EC2::InternetGateway
-  #   Properties:
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Ref IgwName
-
-  # # attaching the Internet Gateway to the VPC
-  # AttachGateway:
-  #   Type: AWS::EC2::VPCGatewayAttachment
-  #   Properties:
-  #     VpcId: !Ref VPCInstance
-  #     InternetGatewayId: !Ref IgwInstance
-
-  # # creating a routing table attached to the VPC 
-  # RouteTableInstance:
-  #   Type: AWS::EC2::RouteTable
-  #   Properties:
-  #     VpcId: !Ref VPCInstance
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Ref RoutingTableName
-
-  # # exposing a route inside the subnet 
-  # PublicRoute:
-  #   Type: AWS::EC2::Route
-  #   Properties:
-  #     RouteTableId: !Ref RouteTableInstance
-  #     DestinationCidrBlock: 0.0.0.0/0
-  #     GatewayId: !Ref IgwInstance
-
-  # # associate subnet to the routing table
-  # SubnetRouteTableAssociation:
-  #   Type: AWS::EC2::SubnetRouteTableAssociation
-  #   Properties:
-  #     SubnetId: !Ref SubnetInstance
-  #     RouteTableId: !Ref RouteTableInstance
-
-  # # security Group for SSH and HTTP Access
-  # MySecurityGroup:
-  #   Type: AWS::EC2::SecurityGroup
-  #   Properties:
-  #     GroupDescription: Security group for SSH and HTTP access restricted to specified IP
-  #     VpcId: !Ref VPCInstance
-  #     SecurityGroupIngress:
-  #       - IpProtocol: tcp
-  #         FromPort: 22
-  #         ToPort: 22
-  #         CidrIp: !Ref MyIPAddress
-  #       - IpProtocol: tcp
-  #         FromPort: 80
-  #         ToPort: 80
-  #         CidrIp: !Ref MyIPAddress
-
-  # ================================================================================================
-
-  # # ==== EC2 section ====
-
-  # # image ids catalog: https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#AMICatalog:
-
-  # # link the instance to the role
-  # EC2InstanceProfile:
-  #   Type: AWS::IAM::InstanceProfile
-  #   Properties:
-  #     Roles:
-  #       - !Ref EC2InstanceRole
-
-  # # IAM Role for EC2
-  # EC2InstanceRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: ec2.amazonaws.com
-  #           Action: sts:AssumeRole
-  #     ManagedPolicyArns:
-  #       - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy 
-  #       - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-  #     Path: /
-
-  # # EC2 instance declaration
-  # EC2Instance:
-  #   Type: AWS::EC2::Instance
-  #   Properties:
-  #     ImageId: ami-012d51171727a42bb
-  #     InstanceType: !Ref InstanceTypeValue
-  #     IamInstanceProfile: !Ref EC2InstanceProfile
-  #     NetworkInterfaces:
-  #       - AssociatePublicIpAddress: 'true'
-  #         DeviceIndex: '0'
-  #         SubnetId: !Ref SubnetInstance
-  #         GroupSet:
-  #           - !Ref MySecurityGroup
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Ref InstanceName
-
-  # ================================================================================================
-
-  # # ==== CodeDeploy section ====
-
-  # # IAM Role
-  # CodeDeployServiceRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: codedeploy.amazonaws.com
-  #           Action: sts:AssumeRole
-  #     ManagedPolicyArns:
-  #       - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
-  #     Path: /
-
-  # # declaring the application instance
-  # CodeDeployApplicationInstance:
-  #   Type: AWS::CodeDeploy::Application
-  #   Properties:
-  #     ApplicationName: !Ref ApplicationName
-  #     ComputePlatform: Server
-
-  # # declaring general information about deployment
-  # CodeDeployDeploymentGroupInstance:
-  #   Type: AWS::CodeDeploy::DeploymentGroup
-  #   DependsOn: CodeDeployApplicationInstance
-  #   Properties:
-  #     ApplicationName: !Ref ApplicationName 
-  #     DeploymentGroupName: !Ref DeploymentGroupName
-  #     ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn # this should be changed to !Ref CodeDeployServiceRole (?)
-  #     DeploymentStyle:
-  #       DeploymentType: IN_PLACE
-  #       DeploymentOption: WITHOUT_TRAFFIC_CONTROL
-  #     DeploymentConfigName: CodeDeployDefault.OneAtATime
-  #     Ec2TagFilters:
-  #       - Key: Name
-  #         Value: !Ref InstanceName    # application must be ran on this instance with (key, name) matching
-  #         Type: KEY_AND_VALUE
-  #     AutoRollbackConfiguration:
-  #       Enabled: true
-  #       Events:
-  #         - DEPLOYMENT_FAILURE
-  #         - DEPLOYMENT_STOP_ON_REQUEST
-
-  # ================================================================================================
-
   # ==== EventBridge section ====
+  # TODO: changing trigger with whatever commit except the pull request merge
 
   EventRole:
     Type: AWS::IAM::Role
@@ -367,7 +188,6 @@ Resources:
                   - arn:aws:s3:::demo-artifact-store-cloudformation/*
                   - '*'
 
-  # Create CodePipeline
   PipelineInstance:
     Type: AWS::CodePipeline::Pipeline
     Properties:
@@ -443,11 +263,11 @@ Resources:
         #         ApplicationName: !Ref ApplicationName
         #         DeploymentGroupName: !Ref DeploymentGroupName
         #       RunOrder: 1
+
   # ================================================================================================
 
   # ==== S3 buckets section ====
 
-  # Bucket which is going to contain Source and Deploy output
   ArtifactStoreBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -473,31 +293,6 @@ Resources:
             Principal:
               AWS: !Ref IAMUser
 
-    # PackageStoreBucket:
-  #   Type: AWS::S3::Bucket
-  #   Properties:
-  #     BucketName: demo-package-bucket
-  #     Tags:
-  #       - Key: Name
-  #         Value: demo-package-bucket
-  #     AccessControl: Private
-
-  # PackageStoreBucketPolicy:
-  #   Type: AWS::S3::BucketPolicy
-  #   Properties:
-  #     Bucket: !Ref PackageStoreBucket
-  #     PolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #         - Sid: FullAccessForIAMUser
-  #           Effect: Allow
-  #           Action: s3:*
-  #           Resource:
-  #             - !Sub arn:aws:s3:::${demo-package-bucket}
-  #             - !Sub arn:aws:s3:::${demo-package-bucket}/*
-  #           Principal:
-  #             AWS: !Ref IAMUser
-
   # ================================================================================================
 
   # ==== CodeBuild section ====
@@ -510,8 +305,8 @@ Resources:
         EncryptionDisabled: true
         OverrideArtifactName: true
         Type: CODEPIPELINE
-      BadgeEnabled: false # publicly accessible URL for the project's build
-      ConcurrentBuildLimit: '1' # max parallel builds
+      BadgeEnabled: false
+      ConcurrentBuildLimit: '1'
       Description: Demo build stage inside the pipeline
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL # computation power type at https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codebuild-project-environment.html#cfn-codebuild-project-environment-certificate
@@ -526,7 +321,6 @@ Resources:
         - Key: Name
           Value: !Ref ProjectName
 
-  # IAM Role
   CodeBuildServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -615,7 +409,6 @@ Resources:
             files:
               - target/surefire-reports/**
             discard-paths: yes 
-        # SourceVersion: "refs/heads/master"
       Tags:
         - Key: Name
           Value: FeedbackBuildProject
@@ -623,7 +416,6 @@ Resources:
 
   # ==== Lambda section ====
 
-  # Lambda role very generic
   LambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -656,7 +448,7 @@ Resources:
       Handler: index.createReport
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.10
-      Timeout: 10
+      Timeout: 90
 
   # create the final pull request
   CreatePullRequest:
@@ -674,7 +466,6 @@ Resources:
       Environment:
         Variables:
           REPOSITORY_NAME: !Ref RepositoryName
-
 
   # generate test suite
   HandleReport:
@@ -719,7 +510,7 @@ Resources:
         Variables:
           SNS_TOPIC_ARN: !Ref SNSHumanApprovalEmailTopic
 
-          # lambda function to create and send message
+  # lambda function to create and send message
   SendPullRequestEmail:
     Type: "AWS::Lambda::Function"
     Properties:
@@ -835,6 +626,7 @@ Resources:
   # ================================================================================================
 
   # ==== StepFunction section ====
+
   FeedbackStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
@@ -1147,6 +939,7 @@ Resources:
   # # ================================================================================================
 
   # ====  API gateway section ====
+
   # Begin API Gateway Resources
   # the actual RestApi component in AWS
   ExecutionApi:
@@ -1272,6 +1065,187 @@ Resources:
         -
            Endpoint: !Sub ${Email}
            Protocol: email
+
+  # ================================================================================================
+
+
+  # # ==== network section ====
+
+  # # creating a VPC 
+  # VPCInstance:
+  #   Type: AWS::EC2::VPC
+  #   Properties:
+  #     CidrBlock: 10.0.0.0/24    # address pool
+  #     EnableDnsSupport: true
+  #     EnableDnsHostnames: true  # expose public dns  
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref VPCName
+
+  # # creating a Subnet and linking it to the VPC
+  # SubnetInstance:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref VPCInstance
+  #     CidrBlock: 10.0.0.0/24    # address pool
+  #     MapPublicIpOnLaunch: true # assign public IP to instances in this subnet
+  #     AvailabilityZone: !Select
+  #       - 0
+  #       - !GetAZs ''
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref SubnetName
+
+  # # creating a Internet Gateway
+  # IgwInstance:
+  #   Type: AWS::EC2::InternetGateway
+  #   Properties:
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref IgwName
+
+  # # attaching the Internet Gateway to the VPC
+  # AttachGateway:
+  #   Type: AWS::EC2::VPCGatewayAttachment
+  #   Properties:
+  #     VpcId: !Ref VPCInstance
+  #     InternetGatewayId: !Ref IgwInstance
+
+  # # creating a routing table attached to the VPC 
+  # RouteTableInstance:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId: !Ref VPCInstance
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref RoutingTableName
+
+  # # exposing a route inside the subnet 
+  # PublicRoute:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     RouteTableId: !Ref RouteTableInstance
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     GatewayId: !Ref IgwInstance
+
+  # # associate subnet to the routing table
+  # SubnetRouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId: !Ref SubnetInstance
+  #     RouteTableId: !Ref RouteTableInstance
+
+  # # security Group for SSH and HTTP Access
+  # MySecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     GroupDescription: Security group for SSH and HTTP access restricted to specified IP
+  #     VpcId: !Ref VPCInstance
+  #     SecurityGroupIngress:
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: !Ref MyIPAddress
+  #       - IpProtocol: tcp
+  #         FromPort: 80
+  #         ToPort: 80
+  #         CidrIp: !Ref MyIPAddress
+
+  # ================================================================================================
+
+  # # ==== EC2 section ====
+
+  # # image ids catalog: https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#AMICatalog:
+
+  # # link the instance to the role
+  # EC2InstanceProfile:
+  #   Type: AWS::IAM::InstanceProfile
+  #   Properties:
+  #     Roles:
+  #       - !Ref EC2InstanceRole
+
+  # # IAM Role for EC2
+  # EC2InstanceRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: ec2.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy 
+  #       - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+  #     Path: /
+
+  # # EC2 instance declaration
+  # EC2Instance:
+  #   Type: AWS::EC2::Instance
+  #   Properties:
+  #     ImageId: ami-012d51171727a42bb
+  #     InstanceType: !Ref InstanceTypeValue
+  #     IamInstanceProfile: !Ref EC2InstanceProfile
+  #     NetworkInterfaces:
+  #       - AssociatePublicIpAddress: 'true'
+  #         DeviceIndex: '0'
+  #         SubnetId: !Ref SubnetInstance
+  #         GroupSet:
+  #           - !Ref MySecurityGroup
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref InstanceName
+
+  # ================================================================================================
+
+  # # ==== CodeDeploy section ====
+
+  # # IAM Role
+  # CodeDeployServiceRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: codedeploy.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+  #     Path: /
+
+  # # declaring the application instance
+  # CodeDeployApplicationInstance:
+  #   Type: AWS::CodeDeploy::Application
+  #   Properties:
+  #     ApplicationName: !Ref ApplicationName
+  #     ComputePlatform: Server
+
+  # # declaring general information about deployment
+  # CodeDeployDeploymentGroupInstance:
+  #   Type: AWS::CodeDeploy::DeploymentGroup
+  #   DependsOn: CodeDeployApplicationInstance
+  #   Properties:
+  #     ApplicationName: !Ref ApplicationName 
+  #     DeploymentGroupName: !Ref DeploymentGroupName
+  #     ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn # this should be changed to !Ref CodeDeployServiceRole (?)
+  #     DeploymentStyle:
+  #       DeploymentType: IN_PLACE
+  #       DeploymentOption: WITHOUT_TRAFFIC_CONTROL
+  #     DeploymentConfigName: CodeDeployDefault.OneAtATime
+  #     Ec2TagFilters:
+  #       - Key: Name
+  #         Value: !Ref InstanceName    # application must be ran on this instance with (key, name) matching
+  #         Type: KEY_AND_VALUE
+  #     AutoRollbackConfiguration:
+  #       Enabled: true
+  #       Events:
+  #         - DEPLOYMENT_FAILURE
+  #         - DEPLOYMENT_STOP_ON_REQUEST
+
+  # ================================================================================================
   
 Outputs:
   # VPCId:
