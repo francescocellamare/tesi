@@ -362,7 +362,7 @@ Resources:
                   - codebuild:*
                   - codedeploy:*
                 Resource:
-                  - arn:aws:codecommit:eu-south-1:344740472567:SpringProjectRepository
+                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${RepositoryName}
                   - arn:aws:s3:::demo-artifact-store-cloudformation
                   - arn:aws:s3:::demo-artifact-store-cloudformation/*
                   - '*'
@@ -551,7 +551,7 @@ Resources:
                 Action:
                   - logs:*
                 Resource:
-                  - arn:aws:codecommit:eu-south-1:344740472567:SpringProjectRepository
+                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${RepositoryName}
                   - '*'
 
   CodeBuildFeedbackInstance:
@@ -574,7 +574,7 @@ Resources:
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: CODECOMMIT
-        Location: "https://eu-south-1.console.aws.amazon.com/codesuite/codecommit/repositories/SpringProjectRepository"
+        Location: !Sub "https://eu-south-1.console.aws.amazon.com/codesuite/codecommit/repositories/${RepositoryName}"
         BuildSpec: !Sub |
           version: 0.2
           env:
