@@ -26,17 +26,20 @@ def commit_response(repository_name, branch_name, content, path):
 
     # filePath = path.replace("main", "test")
     # filePath = filePath.replace(".java", "Test.java")
-    commit_response = client.put_file(
-        repositoryName=repository_name,
-        branchName=branch_name,
-        fileContent=content.encode('utf-8'),
-        filePath=path,
-        fileMode='NORMAL',
-        parentCommitId=parent_commit_id,
-        commitMessage="generated test",
-        name="ChatGPT",
-        email="francesco.pio.cellamare28@gmail.com"
-    )
+    try:
+        commit_response = client.put_file(
+            repositoryName=repository_name,
+            branchName=branch_name,
+            fileContent=content.encode('utf-8'),
+            filePath=path,
+            fileMode='NORMAL',
+            parentCommitId=parent_commit_id,
+            commitMessage="generated test",
+            name="ChatGPT",
+            email="francesco.pio.cellamare28@gmail.com"
+        )
+    except client.exceptions.SameFileContentException:
+        print(F'File {path} not updated')
 
     print(f"File {path} committed successfully")
 

@@ -6,13 +6,7 @@ import zipfile
 
 s3_client = boto3.client('s3')
 
-"""
-    input:
-        report.txt (whenever there's a commit so maximum once for each pipeline execution)
-        FeedbackBuildArtifacts.zip (whenever there's a mvn test execution so for each commit + for each inner build stage)
 
-
-"""
 def createReport(event, context):
     try:
         print("Starting createReport function.")
@@ -28,10 +22,12 @@ def createReport(event, context):
             Bucket=s3_Bucket_Name,
             Prefix=s3_Folder
         )
+        print("Bucket found")
         print(objects)
         parsed_results = []
 
         if len(objects['Contents']) > 1:
+            # fetching the first object in deployoutp
             s3_Filename = objects['Contents'][1]['Key']
             print(f"Found file: {s3_Filename} in the folder.")
 
@@ -70,7 +66,7 @@ def createReport(event, context):
                     Key=s3_Filename
                 )
             else:
-                print("it's a merge")
+                print("git show didn't show changes (ie. it's a merge)")
 
         else:
             print("Commit report.txt not found")
@@ -168,14 +164,14 @@ def parse_file(file_content):
         parsed_data["TimeElapsed"] = float(stats_match.group(5))
         
     # Parse failed tests if any
-    if parsed_data.get("Failures", 0) > 0:
+    if parsed_data.get("Failures", 0) or parsed_data.get("Errors", 0) > 0:
         failure_pattern = re.compile(
-            r"^([\w\.\s]+?)\s--\s+Time elapsed:\s+[\d\.]+\s+s\s+<<<\s+FAILURE!\n(.+?)\n", 
+            r"^([\w\.\s]+?)\s--\s+Time elapsed:\s+[\d\.]+\s+s\s+<<<\s+(ERROR|FAILURE)!\n(.+?)\n", 
             re.MULTILINE
         )
         matches = failure_pattern.findall(file_content)
         parsed_data["TestFailures"] = [
-            {"test": match[0].strip(), "error": match[1].strip()} for match in matches
+            {"test": match[0].strip(), "error": match[2].strip()} for match in matches
         ]
         
     return parsed_data
