@@ -11,6 +11,10 @@ downloadS3:
 	aws s3 cp s3://$(BUCKET_NAME) $(LOCAL_PATH)/ --recursive
 	echo "Bucket $(BUCKET_NAME) downloaded"
 
+cleanS3:
+	aws s3 rm s3://${BUCKET_NAME}/DemoPipeline/ -- recursive
+	echo "Bucket $(BUCKET_NAME) clean"
+
 deleteS3:
 	aws s3 rm s3://$(BUCKET_NAME) --recursive
 	aws s3api delete-bucket --bucket $(BUCKET_NAME) --region $(REGION)
