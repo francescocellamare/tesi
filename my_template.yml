@@ -281,7 +281,7 @@ Resources:
 
   # ================================================================================================
 
-  # ==== CodePipeline section ====
+  # ==== EventBridge section ====
 
   EventRole:
     Type: AWS::IAM::Role
@@ -315,19 +315,27 @@ Resources:
         source:
           - aws.codecommit
         detail-type:
-          - 'CodeCommit Pull Request State Change'
+          - 'CodeCommit Repository State Change'
         resources:
           - !Join [ '', [ 'arn:aws:codecommit:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref RepositoryName ] ]
         detail:
-          event: 
-            anything-but: 
-              - "pullRequestMergeStatusUpdated"
+          event:
+            - referenceCreated
+            - referenceUpdated
+          referenceType:
+            - tag
+          referenceName:
+              - "GENERATE"
       Targets:
         -
           Arn: 
             !Join [ '', [ 'arn:aws:codepipeline:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref PipelineName ] ]
           RoleArn: !GetAtt EventRole.Arn
           Id: codepipeline-PipelineName
+
+  # ================================================================================================
+
+  # ==== CodePipeline section ====
 
   CodePipelineServiceRole:
     Type: AWS::IAM::Role
@@ -354,7 +362,7 @@ Resources:
                   - codebuild:*
                   - codedeploy:*
                 Resource:
-                  - arn:aws:codecommit:eu-south-1:344740472567:DemoRepositoryCloudFormation
+                  - arn:aws:codecommit:eu-south-1:344740472567:SpringProjectRepository
                   - arn:aws:s3:::demo-artifact-store-cloudformation
                   - arn:aws:s3:::demo-artifact-store-cloudformation/*
                   - '*'
@@ -543,7 +551,7 @@ Resources:
                 Action:
                   - logs:*
                 Resource:
-                  - arn:aws:codecommit:eu-south-1:344740472567:DemoRepositoryCloudFormation
+                  - arn:aws:codecommit:eu-south-1:344740472567:SpringProjectRepository
                   - '*'
 
   CodeBuildFeedbackInstance:
@@ -566,7 +574,7 @@ Resources:
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: CODECOMMIT
-        Location: !Sub "https://git-codecommit.eu-south-1.amazonaws.com/v1/repos/SpringProjectRepository"  # Raplace to make it dynamic
+        Location: "https://eu-south-1.console.aws.amazon.com/codesuite/codecommit/repositories/SpringProjectRepository"
         BuildSpec: !Sub |
           version: 0.2
           env:
