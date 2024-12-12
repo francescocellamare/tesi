@@ -96,7 +96,12 @@ def handleReport(event, context):
                 contentDeps = []
                 print(f"fetching dependencies for {item['path']}")
 
-                if packageToPath(item['path']) in tree.keys():
+                # print("+++++++++++++++++++++++++++++++++")
+                # print(f"looking for {packageToPath(item['path'])}")
+                # print(f"looking for {pathToPackage(item['path'])}")
+                # print(f"set: {tree.keys()}")
+                # print("---------------------------------")
+                if pathToPackage(item['path']) in tree.keys():
                     for depsPackage in tree[pathToPackage(item['path'])]:
                         print(f"fetching file {packageToPath(depsPackage)}")
                         contentDeps.append(codecommit.client.get_file(
@@ -127,7 +132,7 @@ def handleReport(event, context):
                 contentDeps = []
                 print(f"fetching dependencies for {item['path']} with list:")
 
-                if packageToPath(item['path']) in tree.keys():
+                if pathToPackage(item['path']) in tree.keys():
                     for depsPackage in tree[pathToPackage(item['path'])]:
                         print(f"fetching file {packageToPath(depsPackage)}")
                         contentDeps.append(codecommit.client.get_file(

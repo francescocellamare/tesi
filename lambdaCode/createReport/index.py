@@ -26,9 +26,9 @@ def createReport(event, context):
         print(objects)
         parsed_results = []
 
-        if len(objects['Contents']) > 1:
+        if len(objects.get('Contents', [])) >= 1:
             # fetching the first object in deployoutp
-            s3_Filename = objects['Contents'][1]['Key']
+            s3_Filename = objects['Contents'][0]['Key']
             print(f"Found file: {s3_Filename} in the folder.")
 
             # Fetch the object from S3 and read its content

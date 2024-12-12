@@ -22,8 +22,17 @@ def createDepsTree():
         
         tree[src].append(dst)
         
-    for key in tree.keys():
-        print(f"key: {key}")
-        for item in tree[key]:
-            print(f"\titem: {item}")
+        output_content = ""
+        for key in tree.keys():
+            output_content += f"key: {key}\n"
+            for item in tree[key]:
+                output_content += f"\titem: {item}\n"
+
+        # Write the output content to a new file in the S3 bucket
+        output_key = "deps/deps_tree_output.txt"
+        s3_client.put_object(
+            Bucket='demo-package-bucket',
+            Key=output_key,
+            Body=output_content
+        )
     return tree

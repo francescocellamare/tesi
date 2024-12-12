@@ -71,12 +71,17 @@ def sendEmail(event, context):
 
     else:
         email_message += f"""
-        No test report found for execution {execution_name}.
+        No test report found for execution {execution_name} due to a compilation error. Try to fix it and approve the request otherwise reject.
         """
+        
+    branch = execution_context['Execution']['Input']['branch']
+        
+    commit_info = get_last_commit_link('SpringProjectRepository', branch)
     
     email_message += f"""
     Execution: {execution_name}
     StateMachine: {statemachine_name}
+    Commit: {commit_info['commit_url']}
 
     Approval required for the execution. Please review the results below:
 
@@ -101,3 +106,33 @@ def sendEmail(event, context):
     except Exception as e:
         print(f"Error: {e}")
         raise e
+
+
+def get_last_commit_link(repo_name, branch_name):
+    # Initialize the CodeCommit client
+    codecommit = boto3.client('codecommit')
+    
+    try:
+        # Get the default branch name for the repository
+        repo_info = codecommit.get_repository(repositoryName=repo_name)
+
+        # Get the last commit ID from the default branch
+        branch_info = codecommit.get_branch(
+            repositoryName=repo_name,
+            branchName=branch_name
+        )
+        last_commit_id = branch_info['branch']['commitId']
+
+        # Construct the URL to the commit page
+        # repo_clone_url_http = repo_info['repositoryMetadata']['cloneUrlHttp']
+        # repo_base_url = repo_clone_url_http.replace(".git", "")
+        repo_base_url = "https://eu-south-1.console.aws.amazon.com/codesuite/codecommit/repositories/"
+        commit_url = f"{repo_base_url}{repo_name}/browse/{last_commit_id}?region=eu-south-1"
+        return {
+            "last_commit_id": last_commit_id,
+            "commit_url": commit_url
+        }
+
+    except Exception as e:
+        print(f"Error retrieving last commit info: {e}")
+        return None

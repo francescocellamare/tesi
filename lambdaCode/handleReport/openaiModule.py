@@ -34,7 +34,7 @@ client = OpenAI(api_key = get_secret())
 
 def create_test_suite(content, path):
     prompt = f"""
-    Provide a complete test suite for the given Java code using the Spring framework with maximum code coverage. Use JUnit5 and Mockito for creating the tests and my test configuration class is called TestConfiguration. Focus on covering all possible branches and edge cases.
+    Provide a complete test suite for the given Java code using the Spring framework with maximum code coverage. Use JUnit5 and Mockito for creating the pure unit tests, focusing on Mockito mocks and skipping Spring context loading. Focus on covering all possible branches and edge cases.
     If it's not java code file reply with just 'not a java file'.
     In some case, there could be some comments to document the method to test like the following case:
     /*
@@ -89,7 +89,7 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
     if error == None:
         print("modify")
         prompt = f"""
-            Provide the missing tests for the given Java code using the Spring framework with maximum code coverage. Use JUnit5 and Mockito for creating the tests and my test configuration class is called TestConfiguration. Focus on covering all possible branches and edge cases.
+            Provide the missing tests for the given Java code using the Spring framework with maximum code coverage. Use JUnit5 and Mockito for creating the pure unit tests, focusing on Mockito mocks and skipping Spring context loading. Focus on covering all possible branches and edge cases.
             In some case, there could be some comments to document the method to test like the following case:
             /*
             Function to test the absolute value of the sum of the parameters
@@ -133,6 +133,7 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
             - Output only the Java code, do not write the ```java and ``` quotes
             - Exclude any comments or explanations
             - Ensure all dependencies needed for the test are appropriately managed and configured.
+            - Write newly added dependencies.
         """
 
         print("Prompt created")
@@ -141,8 +142,22 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
         for item in contentDeps:
             input_content += item['fileContent'].decode('utf-8')
         
-        print(input_content)
-        print("Calling GPT")
+        # print(input_content)
+            
+        s3_client = boto3.client('s3')
+        s3_bucket_name = "demo-package-bucket"
+        s3_key = f"prompts/{sourceCode['filePath']}.txt"
+
+        try:
+            s3_client.put_object(
+                Bucket=s3_bucket_name,
+                Key=s3_key,
+                Body=prompt + "\n\n" + input_content
+            )
+            print(f"Prompt and input content successfully written to s3://{s3_bucket_name}/{s3_key}")
+        except Exception as e:
+            print(f"Failed to write to S3: {e}")
+            print("Calling GPT")
         try:
             response = client.chat.completions.create(
                 model="gpt-4o",
@@ -166,10 +181,10 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
         except Exception as e:
             print(f"Error processing {sourceCode['filePath']}: {e}")
     else:
-        print("modify")
+        print("fix")
         prompt = f"""
-            Fix the test for the given Java code using the Spring framework with maximum code coverage. Use JUnit5 and Mockito for creating the tests and my test configuration class is called TestConfiguration. Focus on covering all possible branches and edge cases.
-            I'm giving you the test which fails and the error.
+            Fix the test for the given Java code using the Spring framework with maximum code coverage. Use JUnit5 and Mockito for creating the pure unit tests, focusing on Mockito mocks and skipping Spring context loading. Focus on covering all possible branches and edge cases.
+            I'm giving you the test which fails and the error as follow: "testMethodWithFailingTest with error: error which makes it fail".
             In some case, there could be some comments to document the method to test like the following case:
             /*
             Function to test the absolute value of the sum of the parameters
@@ -226,6 +241,20 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
         for item in contentDeps:
             input_content += item['fileContent'].decode('utf-8')
             
+                
+        s3_client = boto3.client('s3')
+        s3_bucket_name = "demo-package-bucket"
+        s3_key = f"prompts/{sourceCode['filePath']}.txt"
+
+        try:
+            s3_client.put_object(
+                Bucket=s3_bucket_name,
+                Key=s3_key,
+                Body=prompt + "\n\n" + input_content
+            )
+            print(f"Prompt and input content successfully written to s3://{s3_bucket_name}/{s3_key}")
+        except Exception as e:
+            print(f"Failed to write to S3: {e}")
         print("Calling GPT")
         try:
             response = client.chat.completions.create(
@@ -254,7 +283,7 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
 
 def create_test_suite_with_deps(content, path, contentDeps):
     prompt = f"""
-    Provide a complete test suite for the given Java code using the Spring framework with maximum code coverage. Use JUnit5 and Mockito for creating the tests and my test configuration class is called TestConfiguration. Focus on covering all possible branches and edge cases. Try to understand the code first and never assume the method behavior according to the function name. 
+    Provide a complete test suite for the given Java code using the Spring framework with maximum code coverage. Use JUnit5 and Mockito for creating the pure unit tests, focusing on Mockito mocks and skipping Spring context loading. Focus on covering all possible branches and edge cases. Try to understand the code first and never assume the method behavior according to the function name. 
     In some cases, there could be comments to document the method to test, such as the following example:
     /*
     Function to test the absolute value of the sum of the parameters
@@ -288,7 +317,21 @@ def create_test_suite_with_deps(content, path, contentDeps):
     for item in contentDeps:
         input_content += item['fileContent'].decode('utf-8')
         
-    print(input_content)
+    # print(input_content)
+    
+    s3_client = boto3.client('s3')
+    s3_bucket_name = "demo-package-bucket"
+    s3_key = f"prompts/{path}.txt"
+
+    try:
+        s3_client.put_object(
+            Bucket=s3_bucket_name,
+            Key=s3_key,
+            Body=prompt + "\n\n" + input_content
+        )
+        print(f"Prompt and input content successfully written to s3://{s3_bucket_name}/{s3_key}")
+    except Exception as e:
+        print(f"Failed to write to S3: {e}")
 
     print("Calling GPT")
     try:
