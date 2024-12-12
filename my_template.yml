@@ -102,7 +102,6 @@ Parameters:
 
 Resources:
   # ==== EventBridge section ====
-  # TODO: changing trigger with whatever commit except the pull request merge
 
   EventRole:
     Type: AWS::IAM::Role
@@ -368,7 +367,7 @@ Resources:
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: CODECOMMIT
-        Location: !Sub "https://eu-south-1.console.aws.amazon.com/codesuite/codecommit/repositories/${RepositoryName}"
+        Location: !Sub "https://git-codecommit.eu-south-1.amazonaws.com/v1/repos/${RepositoryName}"
         BuildSpec: !Sub |
           version: 0.2
           env:
@@ -620,8 +619,12 @@ Resources:
               - Effect: Allow
                 Action:
                   - "s3:*"
+                  - "codecommit:GetRepository"
+                  - "codecommit:GetBranch"
+                  - "codecommit:GetCommit"
                 Resource:
                   - "arn:aws:s3:::*"
+                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${RepositoryName}
 
   # ================================================================================================
 
