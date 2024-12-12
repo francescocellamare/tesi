@@ -12,7 +12,7 @@ downloadS3:
 	echo "Bucket $(BUCKET_NAME) downloaded"
 
 cleanS3:
-	aws s3 rm s3://${BUCKET_NAME}/DemoPipeline/ -- recursive
+	aws s3 rm --recursive s3://${BUCKET_NAME}/DemoPipeline/
 	echo "Bucket $(BUCKET_NAME) clean"
 
 deleteS3:
