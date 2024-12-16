@@ -2,7 +2,14 @@ from openai import OpenAI
 import boto3
 import json
 from botocore.exceptions import ClientError
+from enum import Enum
 
+class Model(Enum):
+    GPT4o = "gpt-4o"
+    GPT4o_mini = "gpt-4o-mini"
+
+TEMPERATURE = 0.5
+TOP_1 = 1
 
 def get_secret():
     secret_name = "EnvVar_OpenAi"
@@ -31,59 +38,6 @@ def get_secret():
 
 
 client = OpenAI(api_key = get_secret())
-
-def create_test_suite(content, path):
-    prompt = f"""
-    Provide a complete test suite for the given Java code using the Spring framework with maximum code coverage. Use JUnit5 and Mockito for creating the pure unit tests, focusing on Mockito mocks and skipping Spring context loading. Focus on covering all possible branches and edge cases.
-    If it's not java code file reply with just 'not a java file'.
-    In some case, there could be some comments to document the method to test like the following case:
-    /*
-    Function to test the absolute value of the sum of the parameters
-     */
-    public int AbsOfSum2Int(int a, int b) {{ 
-        return Math.abs(a + b);
-    }}
-    Try to understand the code first and never assume the method behavior according to the function name. 
-    
-    Moreover, the path of the file is {path}, which allows you to determine the package and import the entire project generically. For example, you can import all classes in the project using import com.example.demo.*;. When adding imports, ensure they are as generic as possible to cover all required classes.    
-    # What you are testing
-    It's a Spring Boot project made in the java language which is able to interface with other external resources ie. databases so don't test edge cases like setter for the Ids of the entities/models inside the tables.
-    
-    # Output Requirements
-    - Output only the Java code, do not write the ```java and ``` quotes
-    - Exclude any comments or explanations if not already written
-    - Ensure all dependencies needed for the test are appropriately managed and configured.
-    - Print the related package as first line according to the receieved {path} 
-    """
-
-    print("Prompt created")
-
-
-    print("Calling GPT")
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": prompt
-                },
-                {
-                    "role": "user",
-                    "content": content['fileContent'].decode('utf-8')
-                }
-            ],
-            temperature=0.5,
-            top_p=1
-        )
-
-        print("Generated")
-        return response.choices[0].message.content
-
-    except Exception as e:
-        print(f"Error processing {content['filePath']}: {e}")
-
-
 
 def update_test_suite(sourceCode, testCode, error, contentDeps):
     if error == None:
@@ -142,25 +96,9 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
         for item in contentDeps:
             input_content += item['fileContent'].decode('utf-8')
         
-        # print(input_content)
-            
-        s3_client = boto3.client('s3')
-        s3_bucket_name = "demo-package-bucket"
-        s3_key = f"prompts/{sourceCode['filePath']}.txt"
-
-        try:
-            s3_client.put_object(
-                Bucket=s3_bucket_name,
-                Key=s3_key,
-                Body=prompt + "\n\n" + input_content
-            )
-            print(f"Prompt and input content successfully written to s3://{s3_bucket_name}/{s3_key}")
-        except Exception as e:
-            print(f"Failed to write to S3: {e}")
-            print("Calling GPT")
         try:
             response = client.chat.completions.create(
-                model="gpt-4o",
+                model=Model.GPT4o,
                 messages=[
                     {
                         "role": "system",
@@ -171,8 +109,8 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
                         "content": input_content
                     }
                 ],
-                temperature=0.5,
-                top_p=1
+                temperature=TEMPERATURE,
+                top_p=TOP_1
             )
 
             print("Generated")
@@ -241,24 +179,9 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
         for item in contentDeps:
             input_content += item['fileContent'].decode('utf-8')
             
-                
-        s3_client = boto3.client('s3')
-        s3_bucket_name = "demo-package-bucket"
-        s3_key = f"prompts/{sourceCode['filePath']}.txt"
-
-        try:
-            s3_client.put_object(
-                Bucket=s3_bucket_name,
-                Key=s3_key,
-                Body=prompt + "\n\n" + input_content
-            )
-            print(f"Prompt and input content successfully written to s3://{s3_bucket_name}/{s3_key}")
-        except Exception as e:
-            print(f"Failed to write to S3: {e}")
-        print("Calling GPT")
         try:
             response = client.chat.completions.create(
-                model="gpt-4o",
+                model=Model.GPT4o,
                 messages=[
                     {
                         "role": "system",
@@ -269,12 +192,11 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
                         "content": input_content
                     }
                 ],
-                temperature=0.5,
-                top_p=1
+                temperature=TEMPERATURE,
+                top_p=TOP_1
             )
 
             print("Generated")
-            # print(response.choices[0].message.content)
             return response.choices[0].message.content
 
         except Exception as e:
@@ -316,27 +238,11 @@ def create_test_suite_with_deps(content, path, contentDeps):
     input_content = content['fileContent'].decode('utf-8') + "\n###\n"
     for item in contentDeps:
         input_content += item['fileContent'].decode('utf-8')
-        
-    # print(input_content)
     
-    s3_client = boto3.client('s3')
-    s3_bucket_name = "demo-package-bucket"
-    s3_key = f"prompts/{path}.txt"
-
-    try:
-        s3_client.put_object(
-            Bucket=s3_bucket_name,
-            Key=s3_key,
-            Body=prompt + "\n\n" + input_content
-        )
-        print(f"Prompt and input content successfully written to s3://{s3_bucket_name}/{s3_key}")
-    except Exception as e:
-        print(f"Failed to write to S3: {e}")
-
     print("Calling GPT")
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=Model.GPT4o,
             messages=[
                 {
                     "role": "system",
@@ -347,8 +253,8 @@ def create_test_suite_with_deps(content, path, contentDeps):
                     "content": input_content
                 }
             ],
-            temperature=0.5,
-            top_p=1
+            temperature=TEMPERATURE,
+            top_p=TOP_1
         )
 
         print("Generated")
