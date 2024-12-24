@@ -29,7 +29,8 @@ def createPullRequest(event, context):
         print(f"Response: {response}")
         
         return {
-            'statusCode': 200
+            'statusCode': 200,
+            'pullRequestId': response['pullRequest']['pullRequestId']
         }
     except Exception as err:
         print(f"Error while creating pull request: {err}")

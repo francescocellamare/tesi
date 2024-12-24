@@ -50,35 +50,35 @@ Parameters:
   #   Default: DemoFleetCloudFormation
 
   # ==== EC2 ====
-  # InstanceName:
-  #   Description: EC2 instance name
-  #   Type: String
-  #   Default: DemoEC2CloudFormation
-  # InstanceTypeValue:
-  #   Description: EC2 instance Type
-  #   Type: String
-  #   Default: t3.micro
-  #   AllowedValues:
-  #     - t3.micro
-  #   ConstraintDescription: Must be a valid EC2 instance type
+  InstanceName:
+    Description: EC2 instance name
+    Type: String
+    Default: DemoEC2CloudFormation
+  InstanceTypeValue:
+    Description: EC2 instance Type
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+    ConstraintDescription: Must be a valid EC2 instance type
 
   # ==== Network ====
-  # VPCName:
-  #   Description: VPC name
-  #   Type: String
-  #   Default: DemoVPCCloudFormation
-  # SubnetName:
-  #   Description: Subnet name
-  #   Type: String
-  #   Default: DemoSubnetCloudFormation
-  # IgwName:
-  #   Description: Internet Gateway name
-  #   Type: String
-  #   Default: DemoIgwCloudFormation
-  # RoutingTableName:
-  #   Description: Routing table name
-  #   Type: String
-  #   Default: DemoRoutingTableCloudFormation
+  VPCName:
+    Description: VPC name
+    Type: String
+    Default: DemoVPCCloudFormation
+  SubnetName:
+    Description: Subnet name
+    Type: String
+    Default: DemoSubnetCloudFormation
+  IgwName:
+    Description: Internet Gateway name
+    Type: String
+    Default: DemoIgwCloudFormation
+  RoutingTableName:
+    Description: Routing table name
+    Type: String
+    Default: DemoRoutingTableCloudFormation
 
   # ==== CodePipeline ====
   PipelineName:
@@ -93,12 +93,37 @@ Parameters:
     Default: demo-bucket-cloudformation
 
   # ==== NetworkInterface ====
-  # MyIPAddress:
-  #   Description: The IP address allowed to access SSH and HTTP ports (e.g., your IP)
-  #   Type: String
-  #   Default: 0.0.0.0/0 # Replace with a specific IP for more security, e.g., "192.0.2.0/32"
-  #   AllowedPattern: (\d{1,3}\.){3}\d{1,3}/\d{1,2}
-  #   ConstraintDescription: Must be a valid IP address with CIDR notation (e.g., x.x.x.x/32).
+  MyIPAddress:
+    Description: The IP address allowed to access SSH and HTTP ports (e.g., your IP)
+    Type: String
+    Default: 0.0.0.0/0 # Replace with a specific IP for more security, e.g., "192.0.2.0/32"
+    AllowedPattern: (\d{1,3}\.){3}\d{1,3}/\d{1,2}
+    ConstraintDescription: Must be a valid IP address with CIDR notation (e.g., x.x.x.x/32).
+
+  # ==== ECS ====
+  ServiceName:
+    Type: String
+    Default: spring-boot-service
+
+  ContainerPort:
+    Type: Number
+    Default: 8080
+
+  ContainerCpu:
+    Type: String
+    Default: 128
+
+  ContainerMemory:
+    Type: String
+    Default: 1GB
+
+  HealthCheckPath:
+    Type: String
+    Default: /
+
+  MinContainers:
+    Type: Number
+    Default: 1
 
 Resources:
   # ==== EventBridge section ====
@@ -166,26 +191,195 @@ Resources:
           - Effect: Allow
             Principal:
               Service: codepipeline.amazonaws.com
-            Action: sts:AssumeRole
+            Action: 
+              - sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSStepFunctionsConsoleFullAccess
         - arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceEventsRole
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
       Policies:
         - PolicyName: CodePipelinePolicy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
+                  - "iam:PassRole"
+                Resource: "*"
+                Condition:
+                  StringEqualsIfExists:
+                    "iam:PassedToService":
+                      - "cloudformation.amazonaws.com"
+                      - "elasticbeanstalk.amazonaws.com"
+                      - "ec2.amazonaws.com"
+                      - "ecs-tasks.amazonaws.com"
+
+              - Effect: Allow
+                Action:
+                  - "codecommit:CancelUploadArchive"
+                  - "codecommit:GetBranch"
+                  - "codecommit:GetCommit"
+                  - "codecommit:GetRepository"
+                  - "codecommit:GetUploadArchiveStatus"
+                  - "codecommit:UploadArchive"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "codedeploy:CreateDeployment"
+                  - "codedeploy:GetApplication"
+                  - "codedeploy:GetApplicationRevision"
+                  - "codedeploy:GetDeployment"
+                  - "codedeploy:GetDeploymentConfig"
+                  - "codedeploy:RegisterApplicationRevision"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "codestar-connections:UseConnection"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "elasticbeanstalk:*"
+                  - "ec2:*"
+                  - "elasticloadbalancing:*"
+                  - "autoscaling:*"
+                  - "cloudwatch:*"
+                  - "s3:*"
+                  - "sns:*"
+                  - "cloudformation:*"
+                  - "rds:*"
+                  - "sqs:*"
+                  - "ecs:*"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                  - "lambda:ListFunctions"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "opsworks:CreateDeployment"
+                  - "opsworks:DescribeApps"
+                  - "opsworks:DescribeCommands"
+                  - "opsworks:DescribeDeployments"
+                  - "opsworks:DescribeInstances"
+                  - "opsworks:DescribeStacks"
+                  - "opsworks:UpdateApp"
+                  - "opsworks:UpdateStack"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "cloudformation:CreateStack"
+                  - "cloudformation:DeleteStack"
+                  - "cloudformation:DescribeStacks"
+                  - "cloudformation:UpdateStack"
+                  - "cloudformation:CreateChangeSet"
+                  - "cloudformation:DeleteChangeSet"
+                  - "cloudformation:DescribeChangeSet"
+                  - "cloudformation:ExecuteChangeSet"
+                  - "cloudformation:SetStackPolicy"
+                  - "cloudformation:ValidateTemplate"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "codebuild:BatchGetBuilds"
+                  - "codebuild:StartBuild"
+                  - "codebuild:BatchGetBuildBatches"
+                  - "codebuild:StartBuildBatch"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "devicefarm:ListProjects"
+                  - "devicefarm:ListDevicePools"
+                  - "devicefarm:GetRun"
+                  - "devicefarm:GetUpload"
+                  - "devicefarm:CreateUpload"
+                  - "devicefarm:ScheduleRun"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "servicecatalog:ListProvisioningArtifacts"
+                  - "servicecatalog:CreateProvisioningArtifact"
+                  - "servicecatalog:DescribeProvisioningArtifact"
+                  - "servicecatalog:DeleteProvisioningArtifact"
+                  - "servicecatalog:UpdateProduct"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "cloudformation:ValidateTemplate"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "ecr:DescribeImages"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "states:DescribeExecution"
+                  - "states:DescribeStateMachine"
+                  - "states:StartExecution"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "appconfig:StartDeployment"
+                  - "appconfig:StopDeployment"
+                  - "appconfig:GetDeployment"
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: '*'
+
+              - Effect: Allow
+                Action:
                   - codecommit:*
-                  - s3:*
-                  - codebuild:*
-                  - codedeploy:*
                 Resource:
                   - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${RepositoryName}
-                  - arn:aws:s3:::demo-artifact-store-cloudformation
-                  - arn:aws:s3:::demo-artifact-store-cloudformation/*
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub arn:aws:s3:::${BucketName}/*
                   - '*'
+              - Effect: Allow
+                Action:
+                  - codebuild:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - codedeploy:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecs:*
+                  - ecr:*
+                  - elasticbeanstalk:*
+                  - elasticloadbalancing:*
+                  - ec2:*
+                  - sqs:*
+                  - opsworks:*
+                  - devicefarm:*
+                  - servicecatalog:*
+                Resource: '*'
 
   PipelineInstance:
     Type: AWS::CodePipeline::Pipeline
@@ -212,9 +406,9 @@ Resources:
                 BranchName: !Ref BranchName
                 PollForSourceChanges: false
               RunOrder: 1
-        - Name: Build
+        - Name: PreBuild
           Actions:
-            - Name: BuildAction
+            - Name: PreBuildAction
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -247,21 +441,56 @@ Resources:
                           }
               InputArtifacts:
                 - Name: DeployOutput
+              OutputArtifacts:
+                - Name: MergedDeployOutput
               RunOrder: 3
-        # - Name: Deploy
+
+        # - Name: PostBuild
         #   Actions:
-        #     - Name: DeployAction
+        #     - Name: PostBuildSourceAction  # New Source action to fetch from CodeCommit
         #       ActionTypeId:
-        #         Category: Deploy
+        #         Category: Source
         #         Owner: AWS
-        #         Provider: CodeDeploy
+        #         Provider: CodeCommit
+        #         Version: '1'
+        #       OutputArtifacts:
+        #         - Name: PostBuildSourceOutput  # Output artifact from this action
+        #       Configuration:
+        #         RepositoryName: !Ref RepositoryName
+        #         BranchName: !Ref BranchName
+        #       RunOrder: 4
+
+        # - Name: PostBuildAction  
+        #   Actions:
+        #     - Name: PostBuildAction
+        #       ActionTypeId:
+        #         Category: Build
+        #         Owner: AWS
+        #         Provider: CodeBuild
         #         Version: '1'
         #       InputArtifacts:
-        #         - Name: DeployOutput
+        #         - Name: MergedDeployOutput  # Use the artifact from the new Source action
+        #       OutputArtifacts:
+        #         - Name: PostDeployOutput
         #       Configuration:
-        #         ApplicationName: !Ref ApplicationName
-        #         DeploymentGroupName: !Ref DeploymentGroupName
-        #       RunOrder: 1
+        #         ProjectName: FinalRevisionBuildProject
+        #       RunOrder: 5
+
+        - Name: Deploy
+          Actions:
+            - Name: ECSDeployAction
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: ECS
+                Version: '1'
+              InputArtifacts:
+                - Name: MergedDeployOutput
+              Configuration:
+                ClusterName: spring-boot-app
+                ServiceName: backend-service
+                FileName: output.json
+              RunOrder: 4
 
   # ================================================================================================
 
@@ -367,7 +596,7 @@ Resources:
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: CODECOMMIT
-        Location: !Sub "https://git-codecommit.eu-south-1.amazonaws.com/v1/repos/${RepositoryName}"
+        Location: !Sub "https://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/${RepositoryName}"
         BuildSpec: !Sub |
           version: 0.2
           env:
@@ -411,6 +640,83 @@ Resources:
       Tags:
         - Key: Name
           Value: FeedbackBuildProject
+
+  CodeBuildFinalRevisionServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: codebuild.amazonaws.com
+      Policies:
+        - PolicyName: CodeBuildPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:*
+                  - codecommit:*
+                  - ecs:*
+                  - s3:*
+                  - logs:*
+                Resource: "*"
+
+
+  CodeBuildFinalRevision:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: S3
+        Location: !Ref ArtifactStoreBucket  
+      ConcurrentBuildLimit: '1'
+      Description: Pre deploy build stage
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL  
+        Image: aws/codebuild/standard:7.0
+        Type: LINUX_CONTAINER
+      Name: FinalRevisionBuildProject
+      QueuedTimeoutInMinutes: '5'
+      ServiceRole: !GetAtt CodeBuildFinalRevisionServiceRole.Arn  
+      Source:
+        Type: CODECOMMIT
+        Location: !Sub "https://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/${RepositoryName}"  
+        BuildSpec: !Sub |
+          version: 0.2
+
+          phases:
+            pre_build:
+              commands:
+                - pwd
+                - docker --version
+                - ls
+                - echo Logging in to Amazon ECR...
+                - aws --version
+                - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+                - REPOSITORY_URI=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/spring-boot-app
+            build:
+              commands:
+                - echo Building the Docker image...
+                - docker build -t $REPOSITORY_URI:latest .
+                - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:latest
+            post_build:
+              commands:
+                - echo Pushing the Docker images...
+                - docker push $REPOSITORY_URI:latest
+                - echo Writing image definitions file...
+                - echo "[{\"name\":\"spring-boot-app\",\"imageUri\":\"$REPOSITORY_URI:latest\"}]" > imagedefinitions.json
+                - echo "imagedefinitions.json file created."
+          artifacts:
+            files:
+              - imagedefinitions.json
+      Tags:
+        - Key: Name
+          Value: FinalRevisionBuildProject
+
+
   # ================================================================================================
 
   # ==== Lambda section ====
@@ -448,6 +754,7 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.10
       Timeout: 90
+    DependsOn: LambdaRole
 
   # create the final pull request
   CreatePullRequest:
@@ -465,6 +772,42 @@ Resources:
       Environment:
         Variables:
           REPOSITORY_NAME: !Ref RepositoryName
+    DependsOn: LambdaRole
+
+  # check status of the final pull request
+  CheckPullRequest:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code: ./lambdaCode/checkPullRequest
+      Description: State to check the final pull request if everything succeeded
+      FunctionName: checkPullRequest
+      Handler: index.checkPullRequest
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.10
+      Timeout: 400
+      Environment:
+        Variables:
+          REPOSITORY_NAME: !Ref RepositoryName
+    DependsOn: LambdaRole
+
+
+  # check status of the final pull request
+  AdaptOutput:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code: ./lambdaCode/adaptOutput
+      Description: State to adapt the output to the input requirements of Amazon ECS
+      FunctionName: adaptOutput
+      Handler: index.adaptOutput
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.10
+      Timeout: 30
+    DependsOn: LambdaRole
+
 
   # generate test suite
   HandleReport:
@@ -484,6 +827,7 @@ Resources:
         Variables:
           STACK_NAME: !Ref AWS::StackName
       Timeout: 90
+    DependsOn: LambdaRole
 
   LambdaApprovalFunction:
     Type: 'AWS::Lambda::Function'
@@ -494,6 +838,7 @@ Resources:
       Handler: index.lambda_handler
       Role: !GetAtt "LambdaApiGatewayIAMRole.Arn"
       Runtime: python3.10
+    DependsOn: LambdaApiGatewayIAMRole
 
   # lambda function to create and send message
   SendEmail:
@@ -508,6 +853,7 @@ Resources:
       Environment:
         Variables:
           SNS_TOPIC_ARN: !Ref SNSHumanApprovalEmailTopic
+    DependsOn: LambdaSendEmailExecutionRole
 
   # lambda function to create and send message
   SendPullRequestEmail:
@@ -523,6 +869,7 @@ Resources:
         Variables:
           SNS_TOPIC_ARN: !Ref SNSHumanApprovalEmailTopic
           REPOSITORY_NAME: !Ref RepositoryName
+    DependsOn: LambdaSendEmailExecutionRole
 
   # allows the API gateway to call the lambda (the post inside the integration) 
   LambdaApiGatewayInvoke:
@@ -850,7 +1197,58 @@ Resources:
                       "JitterStrategy": "FULL"
                     }
                   ],
-                "Next": "Ending"
+                "Next": "WaitForMerge"
+              },
+              "WaitForMerge": {
+                "Type": "Wait",
+                "Seconds": 30,
+                "Next": "CheckPullRequest"
+              },
+              "CheckPullRequest":
+              {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters":
+                  {
+                    "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:checkPullRequest",
+                    "Payload": {
+                      "pullRequestId.$": "$.taskResult.Payload.pullRequestId"
+                    }
+                  },
+                "ResultPath": "$.prCheckResult",
+                "Retry":
+                  [
+                    {
+                      "ErrorEquals":
+                        [
+                          "Lambda.ServiceException",
+                          "Lambda.AWSLambdaException",
+                          "Lambda.SdkClientException",
+                          "Lambda.TooManyRequestsException"
+                        ],
+                      "IntervalSeconds": 1,
+                      "MaxAttempts": 3,
+                      "BackoffRate": 2,
+                      "JitterStrategy": "FULL"
+                    }
+                  ],
+                "Next": "IsPRMerged"
+              },
+              "IsPRMerged": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.prCheckResult.Payload.result",
+                    "StringEquals": "Merged",
+                    "Next": "StartFinalBuild"
+                  },
+                  {
+                    "Variable": "$.prCheckResult.Payload.result",
+                    "StringEquals": "NotMerged",
+                    "Next": "WaitForMerge"
+                  }
+                ],
+                "Default": "FailState"
               },
             "SendEmail":
               {
@@ -902,7 +1300,37 @@ Resources:
                     }
                   ]
               },
-            "Ending": { "Type": "Pass", "End": true },
+            "StartFinalBuild": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::codebuild:startBuild.sync",
+                "Parameters": {
+                  "ProjectName": "FinalRevisionBuildProject",
+                  "SourceVersion": "refs/heads/master"
+                },
+                "Next": "AdaptOutput",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.TaskFailed"],
+                    "ResultPath": "$.taskResult",
+                    "Next": "FailState"
+                  }
+                ]
+              },
+
+            "AdaptOutput": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters":
+                  {
+                    "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:adaptOutput"
+                  },
+                "Next": "Ending"
+            },
+            "Ending": { 
+              "Type": "Pass", 
+              "OutputPath": "$.Payload",
+              "End": true
+            },
             "UnknownState":
               {
                 "Type": "Fail",
@@ -918,6 +1346,9 @@ Resources:
           }
         }
       RoleArn: !GetAtt StepFunctionRole.Arn
+
+
+
 
   StepFunctionRole:
     Type: AWS::IAM::Role
@@ -1071,94 +1502,191 @@ Resources:
 
   # ================================================================================================
 
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: '10.0.0.0/16'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
 
-  # # ==== network section ====
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Sub '10.0.0.0/20'
+      MapPublicIpOnLaunch: true
 
-  # # creating a VPC 
-  # VPCInstance:
-  #   Type: AWS::EC2::VPC
-  #   Properties:
-  #     CidrBlock: 10.0.0.0/24    # address pool
-  #     EnableDnsSupport: true
-  #     EnableDnsHostnames: true  # expose public dns  
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Ref VPCName
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
 
-  # # creating a Subnet and linking it to the VPC
-  # SubnetInstance:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref VPCInstance
-  #     CidrBlock: 10.0.0.0/24    # address pool
-  #     MapPublicIpOnLaunch: true # assign public IP to instances in this subnet
-  #     AvailabilityZone: !Select
-  #       - 0
-  #       - !GetAZs ''
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Ref SubnetName
+  VPCGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
 
-  # # creating a Internet Gateway
-  # IgwInstance:
-  #   Type: AWS::EC2::InternetGateway
-  #   Properties:
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Ref IgwName
+  RouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
 
-  # # attaching the Internet Gateway to the VPC
-  # AttachGateway:
-  #   Type: AWS::EC2::VPCGatewayAttachment
-  #   Properties:
-  #     VpcId: !Ref VPCInstance
-  #     InternetGatewayId: !Ref IgwInstance
+  RouteTableAssociation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref Subnet1
+      RouteTableId: !Ref RouteTable
 
-  # # creating a routing table attached to the VPC 
-  # RouteTableInstance:
-  #   Type: AWS::EC2::RouteTable
-  #   Properties:
-  #     VpcId: !Ref VPCInstance
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Ref RoutingTableName
+  InternetRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
 
-  # # exposing a route inside the subnet 
-  # PublicRoute:
-  #   Type: AWS::EC2::Route
-  #   Properties:
-  #     RouteTableId: !Ref RouteTableInstance
-  #     DestinationCidrBlock: 0.0.0.0/0
-  #     GatewayId: !Ref IgwInstance
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt CodePipelineServiceRole.Arn
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy 
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Policies:
+        - PolicyName: CustomEcsTaskExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecr:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource: '*'
 
-  # # associate subnet to the routing table
-  # SubnetRouteTableAssociation:
-  #   Type: AWS::EC2::SubnetRouteTableAssociation
-  #   Properties:
-  #     SubnetId: !Ref SubnetInstance
-  #     RouteTableId: !Ref RouteTableInstance
 
-  # # security Group for SSH and HTTP Access
-  # MySecurityGroup:
-  #   Type: AWS::EC2::SecurityGroup
-  #   Properties:
-  #     GroupDescription: Security group for SSH and HTTP access restricted to specified IP
-  #     VpcId: !Ref VPCInstance
-  #     SecurityGroupIngress:
-  #       - IpProtocol: tcp
-  #         FromPort: 22
-  #         ToPort: 22
-  #         CidrIp: !Ref MyIPAddress
-  #       - IpProtocol: tcp
-  #         FromPort: 80
-  #         ToPort: 80
-  #         CidrIp: !Ref MyIPAddress
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: 'spring-boot-app'
+
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 'apis'
+      RetentionInDays: 1
+
+  ContainerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup      
+    Properties:
+      VpcId: !Ref 'VPC'
+      GroupDescription: for ECS containers
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+
+  Task:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: spring-boot-app
+      Cpu: 256
+      Memory: 512
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: backend-service
+          Image: "344740472567.dkr.ecr.eu-south-1.amazonaws.com/spring-boot-app"
+          PortMappings:
+            - ContainerPort: 8080
+          Environment:
+            - Name: DB_HOST
+              Value: "postgres-db"
+            - Name: DB_PORT
+              Value: "5432"
+            - Name: DB_USER
+              Value: "myuser"
+            - Name: DB_PASSWORD
+              Value: "mypassword"
+            - Name: DB_NAME
+              Value: "demo_db"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-stream-prefix: ecs
+
+        - Name: postgres-db
+          Image: "postgres:latest"
+          PortMappings:
+            - ContainerPort: 5432
+          Environment:
+            - Name: POSTGRES_PASSWORD
+              Value: "mypassword"
+            - Name: POSTGRES_USER
+              Value: "myuser"
+            - Name: POSTGRES_DB
+              Value: "demo_db"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-stream-prefix: postgres
+
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: backend-service
+      TaskDefinition: !Ref Task
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      DesiredCount: 1
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 70
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref Subnet1
+          SecurityGroups:
+            - !Ref ContainerSecurityGroup
+
+
 
   # ================================================================================================
 
-  # # ==== EC2 section ====
+  # ==== EC2 section ====
 
-  # # image ids catalog: https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#AMICatalog:
+  # image ids catalog: https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#AMICatalog:
+
+  # EC2KeyPair:
+  #   Type: AWS::EC2::KeyPair
+  #   Properties:
+  #     KeyName: MyExistingKeyPair
+  #     KeyType: rsa
+  #     PublicKeyMaterial: |
+  #       ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDpAyflDIY/ZAUllirdQEnsoqHk2F4Lbe+khl3ZFDiYQx2eVOrmHL+lMZDiEun19FQCBB7qBHihTBOmUzR3kRJeebe6StbBD5+/SEMSQ+RQank97RHNk+6wR6WpLIHeTUgBV9jpPuXbxeORiSkFjABwvkP1LqqXfChxjygiWIW47gWXFiN4EycTXVpPY7uVtAQHkLb6DVFbyQ0f6Rn1q+AyeGopTvZ1ipgQAf/E9FwS0fe7FqBCNKwvquhOFBhEG6IkknxIUq0PB/f1Bzsr2dC4DkcUbWAcCre3cpsoDl0jSS3ubtDd6UszbfwkgfLZbh36HuIzowGTJI56MCUc9jj93nHt83YVjW3TpKSXBd0MEDnbVrs2veh0yvmsC59y+merXeJkPgk7dRvLV3/Z0SqNxW0Fimjj7X/re9gLRDC5jJWk770cCpMfiEEaXFbMZ+z3XWv1bmW+z7pKGejh24SE1ABKGMEl3z+xYxMgD46NGO6bkTM7s0zkc+cNRXTug7c= francesco@laptop
 
   # # link the instance to the role
   # EC2InstanceProfile:
@@ -1181,7 +1709,17 @@ Resources:
   #     ManagedPolicyArns:
   #       - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy 
   #       - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-  #     Path: /
+  #     Policies:
+  #       - PolicyName: EC2S3Access
+  #         PolicyDocument:
+  #           Version: '2012-10-17'
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:*
+  #               Resource:
+  #                 - !Sub arn:aws:s3:::${BucketName}/*
+  #                 - "*"
 
   # # EC2 instance declaration
   # EC2Instance:
@@ -1189,6 +1727,7 @@ Resources:
   #   Properties:
   #     ImageId: ami-012d51171727a42bb
   #     InstanceType: !Ref InstanceTypeValue
+  #     KeyName: !Ref EC2KeyPair
   #     IamInstanceProfile: !Ref EC2InstanceProfile
   #     NetworkInterfaces:
   #       - AssociatePublicIpAddress: 'true'
@@ -1200,7 +1739,7 @@ Resources:
   #       - Key: Name
   #         Value: !Ref InstanceName
 
-  # ================================================================================================
+  # # ================================================================================================
 
   # # ==== CodeDeploy section ====
 
@@ -1216,8 +1755,18 @@ Resources:
   #             Service: codedeploy.amazonaws.com
   #           Action: sts:AssumeRole
   #     ManagedPolicyArns:
-  #       - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
-  #     Path: /
+  #     - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+  #     Policies:
+  #       - PolicyName: CodeDeployS3Access
+  #         PolicyDocument:
+  #           Version: '2012-10-17'
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:*
+  #               Resource:
+  #                 - !Sub arn:aws:s3:::${BucketName}/*
+  #                 - "*"
 
   # # declaring the application instance
   # CodeDeployApplicationInstance:
@@ -1233,11 +1782,11 @@ Resources:
   #   Properties:
   #     ApplicationName: !Ref ApplicationName 
   #     DeploymentGroupName: !Ref DeploymentGroupName
-  #     ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn # this should be changed to !Ref CodeDeployServiceRole (?)
+  #     ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
   #     DeploymentStyle:
   #       DeploymentType: IN_PLACE
   #       DeploymentOption: WITHOUT_TRAFFIC_CONTROL
-  #     DeploymentConfigName: CodeDeployDefault.OneAtATime
+  #     DeploymentConfigName: CodeDeployDefault.OneAtATime # https://docs.aws.amazon.com/codedeploy/latest/userguide/deployment-configurations.html
   #     Ec2TagFilters:
   #       - Key: Name
   #         Value: !Ref InstanceName    # application must be ran on this instance with (key, name) matching
@@ -1250,65 +1799,41 @@ Resources:
 
   # ================================================================================================
   
-Outputs:
-  # VPCId:
-  #   Description: VPC ID created for the CloudFormation demo
-  #   Value: !Ref VPCInstance
+# Outputs:
+#   # EC2InstancePublicIP:
+#   #   Description: Public IP of the EC2 instance
+#   #   Value: !GetAtt EC2Instance.PublicIp
 
-  # SubnetId:
-  #   Description: Subnet ID created and associated with the VPC
-  #   Value: !Ref SubnetInstance
+#   # EC2InstanceID:
+#   #   Description: ID of the EC2 instance
+#   #   Value: !Ref EC2Instance
 
-  # IgwId:
-  #   Description: ID of the Internet Gateway attached to the VPC
-  #   Value: !Ref IgwInstance
+#   # EC2InstanceRole:
+#   #   Description: IAM Role attached to the EC2 instance
+#   #   Value: !Ref EC2InstanceRole
 
-  # EC2InstancePublicIP:
-  #   Description: Public IP of the EC2 instance
-  #   Value: !GetAtt EC2Instance.PublicIp
+#   # CodeDeployApplicationName:
+#   #   Description: CodeDeploy Application Name
+#   #   Value: !Ref ApplicationName
 
-  # EC2InstanceID:
-  #   Description: ID of the EC2 instance
-  #   Value: !Ref EC2Instance
+#   # CodeDeployDeploymentGroup:
+#   #   Description: CodeDeploy Deployment Group Name
+#   #   Value: !Ref DeploymentGroupName
 
-  # EC2InstanceRole:
-  #   Description: IAM Role attached to the EC2 instance
-  #   Value: !Ref EC2InstanceRole
+#   CodeBuildInstanceOutput:
+#     Description: Instance of the CodeBuild project
+#     Value: !Ref CodeBuildInstance
 
-  # CodeDeployApplicationName:
-  #   Description: CodeDeploy Application Name
-  #   Value: !Ref ApplicationName
+#   CodePipelineInstanceOutput:
+#     Description: Instance of the Pipeline
+#     Value: !Ref PipelineInstance
 
-  # CodeDeployDeploymentGroup:
-  #   Description: CodeDeploy Deployment Group Name
-  #   Value: !Ref DeploymentGroupName
+#   StateMachineInstanceOutput:
+#     Description: Instance of the feedback state machine
+#     Value: !Ref FeedbackStateMachine
 
-  CodeBuildInstanceOutput:
-    Description: Instance of the CodeBuild project
-    Value: !Ref CodeBuildInstance
-
-  CodePipelineInstanceOutput:
-    Description: Instance of the Pipeline
-    Value: !Ref PipelineInstance
-
-  StateMachineInstanceOutput:
-    Description: Instance of the feedback state machine
-    Value: !Ref FeedbackStateMachine
-
-  SNSHumanApprovalEmailTopicArn:
-    Description: ARN of the SNS Topic for human approval emails
-    Value: !Ref SNSHumanApprovalEmailTopic
-    Export:
-      Name: SNSHumanApprovalEmailTopicArn
-
-  # SecurityGroupID:
-  #   Description: Security Group ID associated with the EC2 instance
-  #   Value: !Ref MySecurityGroup
-
-  # RouteTableID:
-  #   Description: Route Table ID associated with the VPC
-  #   Value: !Ref RouteTableInstance
-
-  # MyIPAddress:
-  #   Description: The IP address allowed to access SSH and HTTP ports
-  #   Value: !Ref MyIPAddress
+#   SNSHumanApprovalEmailTopicArn:
+#     Description: ARN of the SNS Topic for human approval emails
+#     Value: !Ref SNSHumanApprovalEmailTopic
+#     Export:
+#       Name: SNSHumanApprovalEmailTopicArn

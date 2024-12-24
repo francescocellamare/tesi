@@ -98,7 +98,7 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
         
         try:
             response = client.chat.completions.create(
-                model=Model.GPT4o,
+                model=Model.GPT4o.value,
                 messages=[
                     {
                         "role": "system",
@@ -181,7 +181,7 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
             
         try:
             response = client.chat.completions.create(
-                model=Model.GPT4o,
+                model=Model.GPT4o.value,
                 messages=[
                     {
                         "role": "system",
@@ -242,7 +242,7 @@ def create_test_suite_with_deps(content, path, contentDeps):
     print("Calling GPT")
     try:
         response = client.chat.completions.create(
-            model=Model.GPT4o,
+            model=Model.GPT4o.value,
             messages=[
                 {
                     "role": "system",
