@@ -1,0 +1,363 @@
+{
+    "Comment": "State machine to handle test generation with feedback",
+    "StartAt": "CreateReport",
+    "States": {
+      "CreateReport":
+        {
+          "Type": "Task",
+          "Resource": "arn:aws:states:::lambda:invoke",
+          "Parameters":
+            {
+              "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:createReport",
+              "Payload": { "bucketname.$": "$.bucketname", "key.$": "$.key", "branch.$": "$.branch" }
+            },
+          "ResultSelector": { "Payload.$": "$.Payload" },
+          "ResultPath": "$.taskResult",
+          "Next": "BuildResultChoice"
+        },
+      "BuildResultChoice":
+        {
+          "Type": "Choice",
+          "Choices":
+            [
+              {
+                "Variable": "$.buildResult",
+                "StringEquals": "SUCCEEDED",
+                "Next": "HandleReport"
+              },
+              {
+                "Variable": "$.buildResult",
+                "StringEquals": "FAILED",
+                "Next": "SendEmail"
+              }
+            ],
+          "Default": "UnknownState"
+        },
+      "HandleReport":
+        {
+          "Type": "Task",
+          "Resource": "arn:aws:states:::lambda:invoke",
+          "Parameters":
+            {
+              "Payload.$": "$",
+              "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:handleReport"
+            },
+          "ResultSelector": { "Payload.$": "$.Payload" },
+          "ResultPath": "$.taskResult",
+          "Retry":
+            [
+              {
+                "ErrorEquals":
+                  [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2,
+                "JitterStrategy": "FULL"
+              }
+            ],
+          "Next": "StartBuild"
+        },
+      "StartBuild": {
+          "Type": "Task",
+          "Resource": "arn:aws:states:::codebuild:startBuild.sync",
+          "Parameters": {
+            "ProjectName": "FeedbackBuildProject",
+            "SourceVersion.$": "$.taskResult.Payload.body.branch"
+          },
+          "ResultPath": "$.taskResult",
+          "Next": "Patch",
+          "Catch": [
+            {
+              "ErrorEquals": ["States.TaskFailed"],
+              "ResultPath": "$.taskResult",
+              "Next": "ParseCause"
+            }
+          ]
+        },
+        "ParseCause": {
+            "Type": "Pass",
+            "Parameters": {
+              "bucketname.$": "$.bucketname",
+              "key.$": "$.key",
+              "buildResult.$": "$.buildResult",
+              "Cause.$": "States.StringToJson($.taskResult.Cause)"
+            },
+            "ResultPath": "$.parsedCause",
+            "Next": "ExtractSourceVersion"
+          },
+          "ExtractSourceVersion": {
+            "Type": "Pass",
+            "Parameters": {
+              "branch.$": "$.parsedCause.Cause.Build.SourceVersion"
+            },
+            "ResultPath": "$.branch",
+            "Next": "SetFailedResult"
+          },
+        "SetFailedResult": {
+          "Type": "Pass",
+          "Parameters": {
+            "bucketname.$": "$.bucketname",
+            "key.$": "$.key",
+            "buildResult": "FAILED",
+            "branch.$": "$.branch.branch"
+          },
+          "ResultPath": "$",
+          "Next": "FinalBuild"
+        },
+        "Patch": {
+          "Type": "Pass",
+          "Parameters": {
+            "bucketname.$": "$.bucketname",
+            "key.$": "$.key",
+            "buildResult.$": "$.taskResult.Build.BuildStatus",
+            "branch.$": "$.taskResult.Build.SourceVersion"
+          },
+          "ResultPath": "$",
+          "Next": "FinalBuild"
+        },
+        "FinalBuild": {
+          "Type": "Choice",
+            "Choices":
+              [
+                {
+                  "Variable": "$.buildResult",
+                  "StringEquals": "SUCCEEDED",
+                  "Next": "SendPullRequestEmail"
+                },
+                {
+                  "Variable": "$.buildResult",
+                  "StringEquals": "FAILED",
+                  "Next": "CreateReport"
+                }
+              ],
+            "Default": "UnknownState"
+        },
+        "SendPullRequestEmail":
+        {
+          "Type": "Task",
+          "Resource": "arn:${AWS::Partition}:states:::lambda:invoke.waitForTaskToken",
+          "Parameters":
+            {
+              "Payload":
+                {
+                  "ExecutionContext.$": "$$",
+                  "APIGatewayEndpoint": "https://${ExecutionApi}.execute-api.${AWS::Region}.amazonaws.com/states",
+                  "branch.$": "$.branch"
+                },
+              "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:sendPullRequestEmail"
+            },
+          "ResultPath": "$.mailInfo",
+          "Retry":
+            [
+              {
+                "ErrorEquals":
+                  [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2,
+                "JitterStrategy": "FULL"
+              }
+            ],
+          "Next": "ApprovalPullRequest"
+        },
+        "ApprovalPullRequest":
+        {
+          "Type": "Choice",
+          "Choices":
+            [
+              {
+                "Variable": "$.mailInfo.Status",
+                "StringEquals": "Approved!",
+                "Next": "CreatePullRequest"
+              },
+              {
+                "Variable": "$.mailInfo.Status",
+                "StringEquals": "Rejected!",
+                "Next": "FailState"
+              }
+            ]
+        },
+        "CreatePullRequest":
+        {
+          "Type": "Task",
+          "Resource": "arn:aws:states:::lambda:invoke",
+          "Parameters":
+            {
+              "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:createPullRequest",
+              "Payload": { "branch.$": "$.branch" }
+            },
+          "ResultPath": "$.taskResult",
+          "Retry":
+            [
+              {
+                "ErrorEquals":
+                  [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2,
+                "JitterStrategy": "FULL"
+              }
+            ],
+          "Next": "WaitForMerge"
+        },
+        "WaitForMerge": {
+          "Type": "Wait",
+          "Seconds": 30,
+          "Next": "CheckPullRequest"
+        },
+        "CheckPullRequest":
+        {
+          "Type": "Task",
+          "Resource": "arn:aws:states:::lambda:invoke",
+          "Parameters":
+            {
+              "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:checkPullRequest",
+              "Payload": {
+                "pullRequestId.$": "$.taskResult.Payload.pullRequestId"
+              }
+            },
+          "ResultPath": "$.prCheckResult",
+          "Retry":
+            [
+              {
+                "ErrorEquals":
+                  [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2,
+                "JitterStrategy": "FULL"
+              }
+            ],
+          "Next": "IsPRMerged"
+        },
+        "IsPRMerged": {
+          "Type": "Choice",
+          "Choices": [
+            {
+              "Variable": "$.prCheckResult.Payload.result",
+              "StringEquals": "Merged",
+              "Next": "StartFinalBuild"
+            },
+            {
+              "Variable": "$.prCheckResult.Payload.result",
+              "StringEquals": "NotMerged",
+              "Next": "WaitForMerge"
+            }
+          ],
+          "Default": "FailState"
+        },
+      "SendEmail":
+        {
+          "Type": "Task",
+          "Resource": "arn:${AWS::Partition}:states:::lambda:invoke.waitForTaskToken",
+          "Parameters":
+            {
+              "Payload":
+                {
+                  "ExecutionContext.$": "$$",
+                  "APIGatewayEndpoint": "https://${ExecutionApi}.execute-api.${AWS::Region}.amazonaws.com/states",
+                  "Report.$": "$.taskResult.Payload.body"
+                },
+              "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:sendEmail"
+            },
+          "ResultPath": "$.mailInfo",
+          "Retry":
+            [
+              {
+                "ErrorEquals":
+                  [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2,
+                "JitterStrategy": "FULL"
+              }
+            ],
+          "Next": "ManualApprovalChoiceState"
+        },
+      "ManualApprovalChoiceState":
+        {
+          "Type": "Choice",
+          "Choices":
+            [
+              {
+                "Variable": "$.mailInfo.Status",
+                "StringEquals": "Approved!",
+                "Next": "HandleReport"
+              },
+              {
+                "Variable": "$.mailInfo.Status",
+                "StringEquals": "Rejected!",
+                "Next": "FailState"
+              }
+            ]
+        },
+      "StartFinalBuild": {
+          "Type": "Task",
+          "Resource": "arn:aws:states:::codebuild:startBuild.sync",
+          "Parameters": {
+            "ProjectName": "FinalRevisionBuildProject",
+            "SourceVersion": "refs/heads/master"
+          },
+          "Next": "AdaptOutput",
+          "Catch": [
+            {
+              "ErrorEquals": ["States.TaskFailed"],
+              "ResultPath": "$.taskResult",
+              "Next": "FailState"
+            }
+          ]
+        },
+
+      "AdaptOutput": {
+          "Type": "Task",
+          "Resource": "arn:aws:states:::lambda:invoke",
+          "Parameters":
+            {
+              "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:adaptOutput"
+            },
+          "Next": "Ending"
+      },
+      "Ending": { 
+        "Type": "Pass", 
+        "OutputPath": "$.Payload",
+        "End": true
+      },
+      "UnknownState":
+        {
+          "Type": "Fail",
+          "Error": "UnknownBuildStatus",
+          "Cause": "The build returned an unknown status."
+        },
+      "FailState":
+        {
+          "Type": "Fail",
+          "Error": "Pipeline failed",
+          "Cause": "The pipeline failed due to user's choice"
+        }
+    }
+  }
