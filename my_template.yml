@@ -35,20 +35,6 @@ Parameters:
     Type: String
     Default: DemoEventBusCloudFormation
 
-  # ==== CodeDeploy ====
-  # ApplicationName:
-  #   Description: CodeDeploy application name
-  #   Type: String
-  #   Default: DemoApplicationCloudFormation
-  # DeploymentGroupName:
-  #   Description: Deployment group name
-  #   Type: String
-  #   Default: DemoDeploymentGroupCloudFormation
-  # BetaFleet: # unused
-  #   Description: Fleet configured in CodeDeploy
-  #   Type: String
-  #   Default: DemoFleetCloudFormation
-
   # ==== EC2 ====
   InstanceName:
     Description: EC2 instance name
