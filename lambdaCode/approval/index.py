@@ -37,6 +37,8 @@ def lambda_handler(event, context):
         message = {"Status": "Approved!"}
     elif action == "reject":
         message = {"Status": "Rejected!"}
+    elif action == "manual":
+        message = {"Status": "Manual!"}
     else:
         print("Unrecognized action. Expected: approve, reject.")
         return {

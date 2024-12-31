@@ -34,6 +34,9 @@ def sendEmail(event, context):
 
     reject_endpoint = f"{apigw_endpoint}/execution?action=reject&ex={execution_name}&sm={statemachine_name}&taskToken={urllib.parse.quote(task_token)}"
     print(f"rejectEndpoint= {reject_endpoint}")
+    
+    manual_endpoint = f"{apigw_endpoint}/execution?action=manual&ex={execution_name}&sm={statemachine_name}&taskToken={urllib.parse.quote(task_token)}"
+    print(f"manualEndpoint= {manual_endpoint}")
 
     # Define the SNS topic for sending emails
     email_sns_topic = os.environ.get("SNS_TOPIC_ARN")
@@ -76,6 +79,7 @@ def sendEmail(event, context):
 
     Approve: {approve_endpoint}
     Reject: {reject_endpoint}
+    Manual: {manual_endpoint}
     """
 
     sns = boto3.client('sns')

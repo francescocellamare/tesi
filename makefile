@@ -1,5 +1,5 @@
 BUCKET_NAME := demo-bucket-cloudformation
-PACKAGE_BUCKET := demo-package-bucket
+PACKAGE_BUCKET := demo-bucket-cloudformation
 LOCAL_PATH := ~/tesi/AWS/s3
 TEMPLATE_FILE := ~/tesi/AWS/Prototype/my_template.yml
 PACKAGED_TEMPLATE := ~/tesi/AWS/Prototype/packaged_template.yml
@@ -29,11 +29,12 @@ create_template:
 
 deploy_template:
 	@if [ "$(STACK_NAME)" = "" ]; then \
-	  echo "Error: STACK_NAME is required. Use 'make deploy STACK_NAME=<name>'"; \
+	  echo "Error: STACK_NAME is required. Use 'make deploy_template STACK_NAME=<name>'"; \
 	  exit 1; \
 	fi
+	aws s3 cp $(PACKAGED_TEMPLATE) s3://$(BUCKET_NAME)/packaged_template.yml --region $(REGION)
 	aws cloudformation deploy \
-		--template-file $(PACKAGED_TEMPLATE) \
+		--template-url https://$(BUCKET_NAME).s3.$(REGION).amazonaws.com/packaged_template.yml \
 		--stack-name $(STACK_NAME) \
 		--region $(REGION) \
 		--capabilities CAPABILITY_NAMED_IAM
@@ -55,9 +56,10 @@ update_stack:
 	  echo "Error: STACK_NAME is required. Use 'make update_stack STACK_NAME=<name>'"; \
 	  exit 1; \
 	fi
+	aws s3 cp $(PACKAGED_TEMPLATE) s3://$(BUCKET_NAME)/packaged_template.yml --region $(REGION)
 	aws cloudformation update-stack \
 		--stack-name $(STACK_NAME) \
-		--template-body file://$(PACKAGED_TEMPLATE) \
+		--template-url https://$(BUCKET_NAME).s3.$(REGION).amazonaws.com/packaged_template.yml \
 		--region $(REGION) \
 		--capabilities CAPABILITY_NAMED_IAM
 	echo "Stack $(STACK_NAME) updated successfully"

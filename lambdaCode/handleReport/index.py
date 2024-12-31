@@ -51,11 +51,12 @@ def handleReport(event, context):
     print(f"Filtering files with regexp: {regexp}")
     filtered_files = [f for f in commit_report if (
             re.match(regexp, f['path']) and
+            # function to approve the path
             (
                 "controller" in f['path'].lower() or
                 "service" in f['path'].lower() or
                 "utils" in f['path'].lower()
-            )
+            ) 
         )]
     print(f"Filtered files: {filtered_files}")
 
@@ -86,39 +87,40 @@ def handleReport(event, context):
 
             # Handle added files
             elif item["action"] == "A":
-                print(f"Fetching file for addition: {item['path']}")
-                content = codecommit.client.get_file(
-                    repositoryName=repository_name, 
-                    commitSpecifier=branch_name,
-                    filePath=item['path']
-                )
-                
-                contentDeps = []
-                print(f"fetching dependencies for {item['path']}")
+                if "test" not in item['path'].lower():   # excluding test files for test generation just at adding
+                    print(f"Fetching file for addition: {item['path']}")
+                    content = codecommit.client.get_file(
+                        repositoryName=repository_name, 
+                        commitSpecifier=branch_name,
+                        filePath=item['path']
+                    )
+                    
+                    contentDeps = []
+                    print(f"fetching dependencies for {item['path']}")
 
-                # print("+++++++++++++++++++++++++++++++++")
-                # print(f"looking for {packageToPath(item['path'])}")
-                # print(f"looking for {pathToPackage(item['path'])}")
-                # print(f"set: {tree.keys()}")
-                # print("---------------------------------")
-                if pathToPackage(item['path']) in tree.keys():
-                    for depsPackage in tree[pathToPackage(item['path'])]:
-                        print(f"fetching file {packageToPath(depsPackage)}")
-                        contentDeps.append(codecommit.client.get_file(
-                            repositoryName=repository_name, 
-                            commitSpecifier=branch_name,
-                            filePath=packageToPath(depsPackage)
-                        ))
-                else:
-                    print('No dependencies')
-                
-                
-                print(f"Generating test suite for file: {item['path']}")
-                testGenerated = openai.create_test_suite_with_deps(content, item['path'], contentDeps)
-                filePath = item['path'].replace("main", "test").replace(".java", "Test.java")
-                print(f"Committing generated test suite: {filePath}")
-                codecommit.commit_response(repository_name, new_branch_name, testGenerated, filePath)
-                generated += 1
+                    # print("+++++++++++++++++++++++++++++++++")
+                    # print(f"looking for {packageToPath(item['path'])}")
+                    # print(f"looking for {pathToPackage(item['path'])}")
+                    # print(f"set: {tree.keys()}")
+                    # print("---------------------------------")
+                    if pathToPackage(item['path']) in tree.keys():
+                        for depsPackage in tree[pathToPackage(item['path'])]:
+                            print(f"fetching file {packageToPath(depsPackage)}")
+                            contentDeps.append(codecommit.client.get_file(
+                                repositoryName=repository_name, 
+                                commitSpecifier=branch_name,
+                                filePath=packageToPath(depsPackage)
+                            ))
+                    else:
+                        print('No dependencies')
+                    
+                    
+                    print(f"Generating test suite for file: {item['path']}")
+                    testGenerated = openai.create_test_suite_with_deps(content, item['path'], contentDeps)
+                    filePath = item['path'].replace("main", "test").replace(".java", "Test.java")
+                    print(f"Committing generated test suite: {filePath}")
+                    codecommit.commit_response(repository_name, new_branch_name, testGenerated, filePath)
+                    generated += 1
 
             # Handle modified files
             elif item["action"] == "M":

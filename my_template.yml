@@ -87,31 +87,30 @@ Parameters:
     ConstraintDescription: Must be a valid IP address with CIDR notation (e.g., x.x.x.x/32).
 
 
-  # ADDING DEPLOY
   # ==== ECS ====
-  # ServiceName:
-  #   Type: String
-  #   Default: spring-boot-service
+  ServiceName:
+    Type: String
+    Default: spring-boot-service
 
-  # ContainerPort:
-  #   Type: Number
-  #   Default: 8080
+  ContainerPort:
+    Type: Number
+    Default: 8080
 
-  # ContainerCpu:
-  #   Type: String
-  #   Default: 128
+  ContainerCpu:
+    Type: String
+    Default: 128
 
-  # ContainerMemory:
-  #   Type: String
-  #   Default: 1GB
+  ContainerMemory:
+    Type: String
+    Default: 1GB
 
-  # HealthCheckPath:
-  #   Type: String
-  #   Default: /
+  HealthCheckPath:
+    Type: String
+    Default: /
 
-  # MinContainers:
-  #   Type: Number
-  #   Default: 1
+  MinContainers:
+    Type: Number
+    Default: 1
 
 Resources:
   # ==== EventBridge section ====
@@ -432,22 +431,21 @@ Resources:
               OutputArtifacts:
                 - Name: MergedDeployOutput
               RunOrder: 3
-        # ADDING DEPLOY
-        # - Name: Deploy
-        #   Actions:
-        #     - Name: ECSDeployAction
-        #       ActionTypeId:
-        #         Category: Deploy
-        #         Owner: AWS
-        #         Provider: ECS
-        #         Version: '1'
-        #       InputArtifacts:
-        #         - Name: MergedDeployOutput
-        #       Configuration:
-        #         ClusterName: spring-boot-app
-        #         ServiceName: backend-service
-        #         FileName: output.json
-        #       RunOrder: 4
+        - Name: Deploy
+          Actions:
+            - Name: ECSDeployAction
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: ECS
+                Version: '1'
+              InputArtifacts:
+                - Name: MergedDeployOutput
+              Configuration:
+                ClusterName: spring-boot-app
+                ServiceName: backend-service
+                FileName: output.json
+              RunOrder: 4
 
   # ================================================================================================
 
@@ -502,6 +500,76 @@ Resources:
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+          env:
+            shell: /bin/bash
+            exported-variables:
+              - BUILD_STATUS
+              
+          phases:
+            install:
+              on-failure: ABORT
+              commands:
+                - echo "Inline buildspec"
+                - echo "Setting JAVA_HOME to Java 17"
+                - export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
+                - echo $JAVA_HOME
+                - echo "Installing dependencies"
+                - echo "Checking Java version"
+                - java -version
+                - mvn -v
+
+            pre_build:
+              on-failure: ABORT
+              commands:
+                - echo "Cleaning up previous artifacts..."
+                - aws s3 rm s3://${BucketName}/DemoPipeline/DeployOutp --recursive
+                - aws s3 rm s3://${BucketName}/DemoPipeline/ReportOutp --recursive
+                - aws s3 rm s3://${BucketName}/build-artifacts --recursive
+                - echo "Starting the build process"
+                - mvn clean validate -q
+
+            build:
+              on-failure: ABORT
+              commands:
+                - echo "Compiling the Spring Boot project"
+                - mvn clean compile -q
+
+            post_build:
+              on-failure: CONTINUE
+              commands:
+                - echo "Running the test suite"
+                - mvn test -q && export BUILD_STATUS="SUCCEEDED" || export BUILD_STATUS="FAILED"
+                - echo "Tests completed"
+                - echo "Uploading Surefire reports to S3"
+                - zip -r FeedbackBuildArtifacts.zip target/surefire-reports/
+                - aws s3 cp FeedbackBuildArtifacts.zip s3://${BucketName}/build-artifacts/
+                - echo "Uploaded Surefire reports"
+                - git show --name-status HEAD > report.txt
+                - cat report.txt
+                - echo "Generated report"
+                - echo "Building the Spring Boot project"
+                - mvn clean package -q -DskipTests
+                - jdeps --recursive -verbose:class target/classes/ | grep -E "^(\s)*com\.example.demo(.)*classes$" | tr -s " " | rev | cut -d' ' -f2- | rev > deps.txt
+                - aws s3 cp deps.txt s3://${BucketName}/deps/
+                - echo "Ending"
+
+          artifacts:
+            files:
+              - '**/*'
+            name: DeployOutput
+            secondary-artifacts:
+              ReportOutput:
+                files:
+                  - report.txt
+                name: ReportOutput
+                discard-paths: yes
+              DeployOutput:
+                files:
+                  - target/*.jar
+                name: DeployOutput
+                discard-paths: no
       Tags:
         - Key: Name
           Value: !Ref ProjectName
@@ -598,81 +666,80 @@ Resources:
         - Key: Name
           Value: FeedbackBuildProject
 
-  # ADDING DEPLOY
-  # CodeBuildFinalRevisionServiceRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #         - Effect: Allow
-  #           Action: sts:AssumeRole
-  #           Principal:
-  #             Service: codebuild.amazonaws.com
-  #     Policies:
-  #       - PolicyName: CodeBuildPermissions
-  #         PolicyDocument:
-  #           Version: '2012-10-17'
-  #           Statement:
-  #             - Effect: Allow
-  #               Action:
-  #                 - ecr:*
-  #                 - codecommit:*
-  #                 - ecs:*
-  #                 - s3:*
-  #                 - logs:*
-  #               Resource: "*"
+  CodeBuildFinalRevisionServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: codebuild.amazonaws.com
+      Policies:
+        - PolicyName: CodeBuildPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:*
+                  - codecommit:*
+                  - ecs:*
+                  - s3:*
+                  - logs:*
+                Resource: "*"
 
 
-  # CodeBuildFinalRevision:
-  #   Type: AWS::CodeBuild::Project
-  #   Properties:
-  #     Artifacts:
-  #       Type: S3
-  #       Location: !Ref ArtifactStoreBucket  
-  #     ConcurrentBuildLimit: '1'
-  #     Description: Pre deploy build stage
-  #     Environment:
-  #       ComputeType: BUILD_GENERAL1_SMALL  
-  #       Image: aws/codebuild/standard:7.0
-  #       Type: LINUX_CONTAINER
-  #     Name: FinalRevisionBuildProject
-  #     QueuedTimeoutInMinutes: '5'
-  #     ServiceRole: !GetAtt CodeBuildFinalRevisionServiceRole.Arn  
-  #     Source:
-  #       Type: CODECOMMIT
-  #       Location: !Sub "https://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/${RepositoryName}"  
-  #       BuildSpec: !Sub |
-  #         version: 0.2
+  CodeBuildFinalRevision:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: S3
+        Location: !Ref ArtifactStoreBucket  
+      ConcurrentBuildLimit: '1'
+      Description: Pre deploy build stage
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL  
+        Image: aws/codebuild/standard:7.0
+        Type: LINUX_CONTAINER
+      Name: FinalRevisionBuildProject
+      QueuedTimeoutInMinutes: '5'
+      ServiceRole: !GetAtt CodeBuildFinalRevisionServiceRole.Arn  
+      Source:
+        Type: CODECOMMIT
+        Location: !Sub "https://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/${RepositoryName}"  
+        BuildSpec: !Sub |
+          version: 0.2
 
-  #         phases:
-  #           pre_build:
-  #             commands:
-  #               - pwd
-  #               - docker --version
-  #               - ls
-  #               - echo Logging in to Amazon ECR...
-  #               - aws --version
-  #               - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
-  #               - REPOSITORY_URI=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/spring-boot-app
-  #           build:
-  #             commands:
-  #               - echo Building the Docker image...
-  #               - docker build -t $REPOSITORY_URI:latest .
-  #               - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:latest
-  #           post_build:
-  #             commands:
-  #               - echo Pushing the Docker images...
-  #               - docker push $REPOSITORY_URI:latest
-  #               - echo Writing image definitions file...
-  #               - echo "[{\"name\":\"spring-boot-app\",\"imageUri\":\"$REPOSITORY_URI:latest\"}]" > imagedefinitions.json
-  #               - echo "imagedefinitions.json file created."
-  #         artifacts:
-  #           files:
-  #             - imagedefinitions.json
-  #     Tags:
-  #       - Key: Name
-  #         Value: FinalRevisionBuildProject
+          phases:
+            pre_build:
+              commands:
+                - pwd
+                - docker --version
+                - ls
+                - echo Logging in to Amazon ECR...
+                - aws --version
+                - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+                - REPOSITORY_URI=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/spring-boot-app
+            build:
+              commands:
+                - echo Building the Docker image...
+                - docker build -t $REPOSITORY_URI:latest .
+                - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:latest
+            post_build:
+              commands:
+                - echo Pushing the Docker images...
+                - docker push $REPOSITORY_URI:latest
+                - echo Writing image definitions file...
+                - echo "[{\"name\":\"spring-boot-app\",\"imageUri\":\"$REPOSITORY_URI:latest\"}]" > imagedefinitions.json
+                - echo "imagedefinitions.json file created."
+          artifacts:
+            files:
+              - imagedefinitions.json
+      Tags:
+        - Key: Name
+          Value: FinalRevisionBuildProject
 
 
   # ================================================================================================
@@ -711,7 +778,7 @@ Resources:
       Handler: index.createReport
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.10
-      Timeout: 90
+      Timeout: 120
     DependsOn: LambdaRole
 
   # create the final pull request
@@ -726,7 +793,7 @@ Resources:
       Handler: index.createPullRequest
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.10
-      Timeout: 25
+      Timeout: 30
       Environment:
         Variables:
           REPOSITORY_NAME: !Ref RepositoryName
@@ -750,21 +817,20 @@ Resources:
           REPOSITORY_NAME: !Ref RepositoryName
     DependsOn: LambdaRole
 
-  # ADDING DEPLOY
   # check status of the final pull request
-  # AdaptOutput:
-  #   Type: AWS::Lambda::Function
-  #   Properties:
-  #     Architectures:
-  #       - x86_64
-  #     Code: ./lambdaCode/adaptOutput
-  #     Description: State to adapt the output to the input requirements of Amazon ECS
-  #     FunctionName: adaptOutput
-  #     Handler: index.adaptOutput
-  #     Role: !GetAtt LambdaRole.Arn
-  #     Runtime: python3.10
-  #     Timeout: 30
-  #   DependsOn: LambdaRole
+  AdaptOutput:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code: ./lambdaCode/adaptOutput
+      Description: State to adapt the output to the input requirements of Amazon ECS
+      FunctionName: adaptOutput
+      Handler: index.adaptOutput
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.10
+      Timeout: 30
+    DependsOn: LambdaRole
 
 
   # generate test suite
@@ -784,7 +850,7 @@ Resources:
       Environment:
         Variables:
           STACK_NAME: !Ref AWS::StackName
-      Timeout: 90
+      Timeout: 300
     DependsOn: LambdaRole
 
   LambdaApprovalFunction:
@@ -1156,8 +1222,85 @@ Resources:
                       "JitterStrategy": "FULL"
                     }
                   ],
-                "Next": "Ending"
+                "Next": "WaitForMerge"
               },
+              "WaitForMerge": {
+                "Type": "Wait",
+                "Seconds": 30,
+                "Next": "CheckPullRequest"
+              },
+              "CheckPullRequest":
+              {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters":
+                  {
+                    "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:checkPullRequest",
+                    "Payload": {
+                      "pullRequestId.$": "$.taskResult.Payload.pullRequestId"
+                    }
+                  },
+                "ResultPath": "$.prCheckResult",
+                "Retry":
+                  [
+                    {
+                      "ErrorEquals":
+                        [
+                          "Lambda.ServiceException",
+                          "Lambda.AWSLambdaException",
+                          "Lambda.SdkClientException",
+                          "Lambda.TooManyRequestsException"
+                        ],
+                      "IntervalSeconds": 1,
+                      "MaxAttempts": 3,
+                      "BackoffRate": 2,
+                      "JitterStrategy": "FULL"
+                    }
+                  ],
+                "Next": "IsPRMerged"
+              },
+              "IsPRMerged": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.prCheckResult.Payload.result",
+                    "StringEquals": "Merged",
+                    "Next": "StartFinalBuild"
+                  },
+                  {
+                    "Variable": "$.prCheckResult.Payload.result",
+                    "StringEquals": "NotMerged",
+                    "Next": "WaitForMerge"
+                  }
+                ],
+                "Default": "FailState"
+              },
+              "StartFinalBuild": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::codebuild:startBuild.sync",
+                "Parameters": {
+                  "ProjectName": "FinalRevisionBuildProject",
+                  "SourceVersion": "refs/heads/master"
+                },
+                "Next": "AdaptOutput",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.TaskFailed"],
+                    "ResultPath": "$.taskResult",
+                    "Next": "FailState"
+                  }
+                ]
+              },
+
+            "AdaptOutput": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters":
+                  {
+                    "FunctionName": "arn:aws:lambda:eu-south-1:344740472567:function:adaptOutput"
+                  },
+                "Next": "Ending"
+            },
             "SendEmail":
               {
                 "Type": "Task",
@@ -1205,9 +1348,34 @@ Resources:
                       "Variable": "$.mailInfo.Status",
                       "StringEquals": "Rejected!",
                       "Next": "FailState"
+                    },
+                    {
+                      "Variable": "$.mailInfo.Status",
+                      "StringEquals": "Manual!",
+                      "Next": "FormatOutputState"
                     }
                   ]
               },
+              "FormatOutputState": {
+                "Type": "Pass",
+                "Parameters": {
+                  "bucketname.$": "$.bucketname",
+                  "key.$": "$.key",
+                  "buildResult.$": "$.buildResult",
+                  "branch.$": "$.branch",
+                  "taskResult": {
+                    "Payload": {
+                      "statusCode": 200,
+                      "body": {
+                        "message": "Manual approval",
+                        "branch.$": "$.branch"
+                      }
+                    }
+                  }
+                },
+                "ResultPath": "$",
+                "Next": "StartBuild"
+            },
             "Ending": { 
               "Type": "Pass", 
               "OutputPath": "$.Payload",
@@ -1386,176 +1554,175 @@ Resources:
 
   # ====  VPC section ====
 
-  # ADDING DEPLOY
-  # VPC:
-  #   Type: 'AWS::EC2::VPC'
-  #   Properties:
-  #     CidrBlock: '10.0.0.0/16'
-  #     EnableDnsSupport: true
-  #     EnableDnsHostnames: true
-  #     InstanceTenancy: default
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: '10.0.0.0/16'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
 
-  # Subnet1:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref VPC
-  #     AvailabilityZone: !Select [0, !GetAZs '']
-  #     CidrBlock: !Sub '10.0.0.0/20'
-  #     MapPublicIpOnLaunch: true
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Sub '10.0.0.0/20'
+      MapPublicIpOnLaunch: true
 
-  # InternetGateway:
-  #   Type: 'AWS::EC2::InternetGateway'
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
 
-  # VPCGatewayAttachment:
-  #   Type: 'AWS::EC2::VPCGatewayAttachment'
-  #   Properties:
-  #     InternetGatewayId: !Ref InternetGateway
-  #     VpcId: !Ref VPC
+  VPCGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
 
-  # RouteTable:
-  #   Type: 'AWS::EC2::RouteTable'
-  #   Properties:
-  #     VpcId: !Ref VPC
+  RouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
 
-  # RouteTableAssociation1:
-  #   Type: 'AWS::EC2::SubnetRouteTableAssociation'
-  #   Properties:
-  #     SubnetId: !Ref Subnet1
-  #     RouteTableId: !Ref RouteTable
+  RouteTableAssociation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref Subnet1
+      RouteTableId: !Ref RouteTable
 
-  # InternetRoute:
-  #   Type: 'AWS::EC2::Route'
-  #   DependsOn: VPCGatewayAttachment
-  #   Properties:
-  #     GatewayId: !Ref InternetGateway
-  #     RouteTableId: !Ref RouteTable
-  #     DestinationCidrBlock: '0.0.0.0/0'
+  InternetRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
 
-  # ECSTaskExecutionRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: ecs-tasks.amazonaws.com
-  #           Action: sts:AssumeRole
-  #         - Effect: Allow
-  #           Principal:
-  #             AWS: !GetAtt CodePipelineServiceRole.Arn
-  #           Action: sts:AssumeRole
-  #     ManagedPolicyArns:
-  #       - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy 
-  #       - arn:aws:iam::aws:policy/AmazonS3FullAccess
-  #     Policies:
-  #       - PolicyName: CustomEcsTaskExecutionPolicy
-  #         PolicyDocument:
-  #           Version: '2012-10-17'
-  #           Statement:
-  #             - Effect: Allow
-  #               Action:
-  #                 - logs:*
-  #               Resource: '*'
-  #             - Effect: Allow
-  #               Action:
-  #                 - ecr:*
-  #               Resource: '*'
-  #             - Effect: Allow
-  #               Action:
-  #                 - s3:*
-  #               Resource: '*'
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt CodePipelineServiceRole.Arn
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy 
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Policies:
+        - PolicyName: CustomEcsTaskExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecr:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource: '*'
 
 
-  # ECSCluster:
-  #   Type: AWS::ECS::Cluster
-  #   Properties:
-  #     ClusterName: 'spring-boot-app'
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: 'spring-boot-app'
 
-  # CloudWatchLogsGroup:
-  #   Type: AWS::Logs::LogGroup
-  #   Properties:
-  #     LogGroupName: 'apis'
-  #     RetentionInDays: 1
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 'apis'
+      RetentionInDays: 1
 
-  # ContainerSecurityGroup:
-  #   Type: AWS::EC2::SecurityGroup      
-  #   Properties:
-  #     VpcId: !Ref 'VPC'
-  #     GroupDescription: for ECS containers
-  #     SecurityGroupIngress:
-  #       - CidrIp: 0.0.0.0/0
-  #         IpProtocol: -1
+  ContainerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup      
+    Properties:
+      VpcId: !Ref 'VPC'
+      GroupDescription: for ECS containers
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
 
-  # Task:
-  #   Type: AWS::ECS::TaskDefinition
-  #   Properties:
-  #     Family: spring-boot-app
-  #     Cpu: 256
-  #     Memory: 512
-  #     NetworkMode: awsvpc
-  #     RequiresCompatibilities:
-  #       - FARGATE
-  #     ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
-  #     ContainerDefinitions:
-  #       - Name: backend-service
-  #         Image: "344740472567.dkr.ecr.eu-south-1.amazonaws.com/spring-boot-app"
-  #         PortMappings:
-  #           - ContainerPort: 8080
-  #         Environment:
-  #           - Name: DB_HOST
-  #             Value: "postgres-db"
-  #           - Name: DB_PORT
-  #             Value: "5432"
-  #           - Name: DB_USER
-  #             Value: "myuser"
-  #           - Name: DB_PASSWORD
-  #             Value: "mypassword"
-  #           - Name: DB_NAME
-  #             Value: "demo_db"
-  #         LogConfiguration:
-  #           LogDriver: awslogs
-  #           Options:
-  #             awslogs-region: !Ref AWS::Region
-  #             awslogs-group: !Ref CloudWatchLogsGroup
-  #             awslogs-stream-prefix: ecs
+  Task:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: spring-boot-app
+      Cpu: 256
+      Memory: 512
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: backend-service
+          Image: "344740472567.dkr.ecr.eu-south-1.amazonaws.com/spring-boot-app"
+          PortMappings:
+            - ContainerPort: 8080
+          Environment:
+            - Name: DB_HOST
+              Value: "postgres-db"
+            - Name: DB_PORT
+              Value: "5432"
+            - Name: DB_USER
+              Value: "myuser"
+            - Name: DB_PASSWORD
+              Value: "mypassword"
+            - Name: DB_NAME
+              Value: "demo_db"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-stream-prefix: ecs
 
-  #       - Name: postgres-db
-  #         Image: "postgres:latest"
-  #         PortMappings:
-  #           - ContainerPort: 5432
-  #         Environment:
-  #           - Name: POSTGRES_PASSWORD
-  #             Value: "mypassword"
-  #           - Name: POSTGRES_USER
-  #             Value: "myuser"
-  #           - Name: POSTGRES_DB
-  #             Value: "demo_db"
-  #         LogConfiguration:
-  #           LogDriver: awslogs
-  #           Options:
-  #             awslogs-region: !Ref AWS::Region
-  #             awslogs-group: !Ref CloudWatchLogsGroup
-  #             awslogs-stream-prefix: postgres
+        - Name: postgres-db
+          Image: "postgres:latest"
+          PortMappings:
+            - ContainerPort: 5432
+          Environment:
+            - Name: POSTGRES_PASSWORD
+              Value: "mypassword"
+            - Name: POSTGRES_USER
+              Value: "myuser"
+            - Name: POSTGRES_DB
+              Value: "demo_db"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-stream-prefix: postgres
 
-  # Service:
-  #   Type: AWS::ECS::Service
-  #   Properties:
-  #     ServiceName: backend-service
-  #     TaskDefinition: !Ref Task
-  #     Cluster: !Ref ECSCluster
-  #     LaunchType: FARGATE
-  #     DesiredCount: 1
-  #     DeploymentConfiguration:
-  #       MaximumPercent: 200
-  #       MinimumHealthyPercent: 70
-  #     NetworkConfiguration:
-  #       AwsvpcConfiguration:
-  #         AssignPublicIp: ENABLED
-  #         Subnets:
-  #           - !Ref Subnet1
-  #         SecurityGroups:
-  #           - !Ref ContainerSecurityGroup
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: backend-service
+      TaskDefinition: !Ref Task
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      DesiredCount: 1
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 70
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref Subnet1
+          SecurityGroups:
+            - !Ref ContainerSecurityGroup
 
 
 

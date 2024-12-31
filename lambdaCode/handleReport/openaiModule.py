@@ -119,7 +119,7 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
         except Exception as e:
             print(f"Error processing {sourceCode['filePath']}: {e}")
     else:
-        print("fix")
+        print("fix new new")
         prompt = f"""
             Fix the test for the given Java code using the Spring framework with maximum code coverage. Use JUnit5 and Mockito for creating the pure unit tests, focusing on Mockito mocks and skipping Spring context loading. Focus on covering all possible branches and edge cases.
             I'm giving you the test which fails and the error as follow: "testMethodWithFailingTest with error: error which makes it fail".
@@ -163,9 +163,20 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
             // dependencies section (it can be empty)
             public class MyClassDependencyOne {{ code... }}
             public class MyClassDependencyTwo {{ code... }}>
-
             
-            >
+            The input example contains sections separated by ### with the following structure:
+
+                - Source Code: The primary class or function implementation.
+                - Test Code: Unit tests written for the source code.
+                - Failing Test: Details of the failing test, including its name and error message.
+                - Dependencies: Supporting classes, functions, or dependencies to help understand the context.
+
+            Your task:
+
+                - Analyze why the test is failing.
+                - If the test logic is faulty (e.g., asserting 10.50 but receiving 10.5), fix the test.
+                - If the failure requires a change in the source code or dependencies, comment out the test and prepend it with the heading DEV NEEDED.
+                
             # Output Requirements
             - Output only the Java code, do not write the ```java and ``` quotes
             - Exclude any comments or explanations
