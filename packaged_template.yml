@@ -629,14 +629,19 @@ Resources:
             \ Amazon ECR...\n      - aws --version\n      - aws ecr get-login-password\
             \ --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin\
             \ ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com\n      - REPOSITORY_URI=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/spring-boot-app\n\
-            \  build:\n    commands:\n      - echo Building the Docker image...\n\
-            \      - docker build -t $REPOSITORY_URI:latest .\n      - docker tag\
-            \ $REPOSITORY_URI:latest $REPOSITORY_URI:latest\n  post_build:\n    commands:\n\
-            \      - echo Pushing the Docker images...\n      - docker push $REPOSITORY_URI:latest\n\
-            \      - echo Writing image definitions file...\n      - echo \"[{\\\"\
-            name\\\":\\\"spring-boot-app\\\",\\\"imageUri\\\":\\\"$REPOSITORY_URI:latest\\\
-            \"}]\" > imagedefinitions.json\n      - echo \"imagedefinitions.json file\
-            \ created.\"\nartifacts:\n  files:\n    - imagedefinitions.json\n"
+            \  build:\n    commands:\n      - echo \"Creating Jacoco report\"\n  \
+            \    - mvn clean verify\n      - aws s3 cp ./target/site/jacoco/jacoco.csv\
+            \  s3://${BucketName}/jacoco.csv\n      - echo \"Creating PIT testing\
+            \ report\"\n      - mvn test-compile org.pitest:pitest-maven:mutationCoverage\n\
+            \      - aws s3 cp ./target/pit-reports/index.html s3://${BucketName}/pit_report.html\n\
+            \      - echo Building the Docker image...\n      - docker build -t $REPOSITORY_URI:latest\
+            \ .\n      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:latest\n\
+            \  post_build:\n    commands:\n      - echo Pushing the Docker images...\n\
+            \      - docker push $REPOSITORY_URI:latest\n      - echo Writing image\
+            \ definitions file...\n      - echo \"[{\\\"name\\\":\\\"spring-boot-app\\\
+            \",\\\"imageUri\\\":\\\"$REPOSITORY_URI:latest\\\"}]\" > imagedefinitions.json\n\
+            \      - echo \"imagedefinitions.json file created.\"\nartifacts:\n  files:\n\
+            \    - imagedefinitions.json\n"
       Tags:
       - Key: Name
         Value: FinalRevisionBuildProject
@@ -747,7 +752,7 @@ Resources:
       - x86_64
       Code:
         S3Bucket: demo-bucket-cloudformation
-        S3Key: lambdacode/58de209f9f50560df8002b67548f1a34
+        S3Key: lambdacode/851ea7fd907445ba5fd93b1add7c849f
       Description: State to generate test suite for the given .class file
       FunctionName: handleReport
       Handler: index.handleReport

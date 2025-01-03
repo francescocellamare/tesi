@@ -724,6 +724,12 @@ Resources:
                 - REPOSITORY_URI=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/spring-boot-app
             build:
               commands:
+                - echo "Creating Jacoco report"
+                - mvn clean verify
+                - aws s3 cp ./target/site/jacoco/jacoco.csv  s3://${BucketName}/jacoco.csv
+                - echo "Creating PIT testing report"
+                - mvn test-compile org.pitest:pitest-maven:mutationCoverage
+                - aws s3 cp ./target/pit-reports/index.html s3://${BucketName}/pit_report.html
                 - echo Building the Docker image...
                 - docker build -t $REPOSITORY_URI:latest .
                 - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:latest
