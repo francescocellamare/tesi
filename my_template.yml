@@ -527,6 +527,7 @@ Resources:
                 - aws s3 rm s3://${BucketName}/DemoPipeline/DeployOutp --recursive
                 - aws s3 rm s3://${BucketName}/DemoPipeline/ReportOutp --recursive
                 - aws s3 rm s3://${BucketName}/build-artifacts --recursive
+                - aws s3 rm s3://${BucketName}/stats --recursive
                 - echo "Starting the build process"
                 - mvn clean validate -q
 
@@ -859,6 +860,20 @@ Resources:
       Timeout: 300
     DependsOn: LambdaRole
 
+  Stats:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code: ./lambdaCode/stats
+      Description: State to generate stats
+      FunctionName: stats
+      Handler: index.stats
+      Role: !GetAtt LambdaRoleStats.Arn
+      Runtime: python3.10
+      Timeout: 60
+    DependsOn: LambdaRoleStats
+
   LambdaApprovalFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
@@ -1002,6 +1017,27 @@ Resources:
                 Resource:
                   - "arn:aws:s3:::*"
                   - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${RepositoryName}
+
+  LambdaRoleStats:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: "CloudWatchLogsInsightsPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "logs:StartQuery"
+                  - "logs:GetQueryResults"
+                Resource: "*"
 
   # ================================================================================================
 
@@ -1402,7 +1438,18 @@ Resources:
           }
         }
       RoleArn: !GetAtt StepFunctionRole.Arn
+      LoggingConfiguration:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt StepFunctionLogGroup.Arn
+        IncludeExecutionData: true
+        Level: ALL
 
+  StepFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/stepfunctions/FeedbackStateMachineLogs
+      RetentionInDays: 3
 
 
 

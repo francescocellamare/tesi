@@ -156,7 +156,7 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
             }}
             
             ### 
-            
+
             testMethodWithFailingTest with error: error which makes it fail
             
             ###
@@ -189,6 +189,23 @@ def update_test_suite(sourceCode, testCode, error, contentDeps):
         input_content = sourceCode['fileContent'].decode('utf-8') + "\n###\n" + testCode['fileContent'].decode('utf-8') + "\n###\n" + error + "\n###\n"
         for item in contentDeps:
             input_content += item['fileContent'].decode('utf-8')
+        try:
+            
+            s3_client = boto3.client('s3')
+            s3_client.put_object(
+                Bucket="demo-bucket-cloudformation",
+                Key="debug/prompt.txt",
+                Body=input_content,
+                ContentType="text/plain"
+            )
+        except Exception as e:
+            return {
+                "statusCode": 500,
+                "body": json.dumps({
+                    "message": "An error occurred at writing the debug file",
+                    "error": str(e)
+                })
+            }
             
         try:
             response = client.chat.completions.create(

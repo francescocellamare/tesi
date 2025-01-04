@@ -3,6 +3,7 @@ import boto3
 import io
 import re
 import zipfile
+import csv
 
 s3_client = boto3.client('s3')
 
@@ -25,6 +26,8 @@ def createReport(event, context):
         print("Bucket found")
         print(objects)
         parsed_results = []
+        countFailure = 0
+
 
         if len(objects.get('Contents', [])) >= 1:
             # fetching the first object in deployoutp
@@ -77,6 +80,7 @@ def createReport(event, context):
         test_results = []
 
         try:
+            compilationError = False
             report = s3_client.get_object(
                 Bucket=s3_Bucket_Name,
                 Key=s3_key_failedTest
@@ -97,6 +101,7 @@ def createReport(event, context):
                                 print(f"Found failed tests in {file}.")
                                 for failure in parsed_content["TestFailures"]:
                                     parsed_results.append(parse_error(failure))
+                                    countFailure += 1
                             test_results.append(parsed_content)
 
             # Clean up the failed test file
@@ -109,6 +114,48 @@ def createReport(event, context):
         except s3_client.exceptions.NoSuchKey:
             print(f"Failed test file '{s3_key_failedTest}' not found.")
             test_results = []
+            compilationError = True
+
+
+        csv_file_key = 'stats/feedbackLoop.csv'
+        print(f"Checking for existing CSV file at {csv_file_key}.")
+
+        try:
+            s3_client.head_object(Bucket=s3_Bucket_Name, Key=csv_file_key)
+            print(f"CSV file found at {csv_file_key}. Appending data.")
+            file_exists = True
+        except s3_client.exceptions.ClientError:
+            print(f"CSV file not found. Creating a new one at {csv_file_key}.")
+            file_exists = False
+
+        csv_line = [1, countFailure, 1 if compilationError else 0]
+        
+        if file_exists:
+            s3_object = s3_client.get_object(Bucket=s3_Bucket_Name, Key=csv_file_key)
+            body = s3_object['Body']
+            existing_content = body.read().decode('utf-8')
+
+            with io.StringIO(existing_content) as csv_input:
+                csv_reader = csv.reader(csv_input)
+                existing_data = list(csv_reader)
+                iterationNumber = len(existing_data)
+                csv_line[0] = iterationNumber
+                existing_data.append(csv_line)
+
+            with io.StringIO() as output:
+                csv_writer = csv.writer(output)
+                csv_writer.writerows(existing_data)
+                new_content = output.getvalue()
+
+            s3_client.put_object(Bucket=s3_Bucket_Name, Key=csv_file_key, Body=new_content)
+        else:
+            with io.StringIO() as output:
+                csv_writer = csv.writer(output)
+                csv_writer.writerow(["Iteration", "FailingTests", "CompilationErrors"])  
+                csv_writer.writerow(csv_line)
+                new_content = output.getvalue()
+
+            s3_client.put_object(Bucket=s3_Bucket_Name, Key=csv_file_key, Body=new_content)
 
         # Return results as a structured response
         print("Returning the structured results.")

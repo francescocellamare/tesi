@@ -484,26 +484,26 @@ Resources:
             \n      - aws s3 rm s3://${BucketName}/DemoPipeline/DeployOutp --recursive\n\
             \      - aws s3 rm s3://${BucketName}/DemoPipeline/ReportOutp --recursive\n\
             \      - aws s3 rm s3://${BucketName}/build-artifacts --recursive\n  \
-            \    - echo \"Starting the build process\"\n      - mvn clean validate\
-            \ -q\n\n  build:\n    on-failure: ABORT\n    commands:\n      - echo \"\
-            Compiling the Spring Boot project\"\n      - mvn clean compile -q\n\n\
-            \  post_build:\n    on-failure: CONTINUE\n    commands:\n      - echo\
-            \ \"Running the test suite\"\n      - mvn test -q && export BUILD_STATUS=\"\
-            SUCCEEDED\" || export BUILD_STATUS=\"FAILED\"\n      - echo \"Tests completed\"\
-            \n      - echo \"Uploading Surefire reports to S3\"\n      - zip -r FeedbackBuildArtifacts.zip\
-            \ target/surefire-reports/\n      - aws s3 cp FeedbackBuildArtifacts.zip\
-            \ s3://${BucketName}/build-artifacts/\n      - echo \"Uploaded Surefire\
-            \ reports\"\n      - git show --name-status HEAD > report.txt\n      -\
-            \ cat report.txt\n      - echo \"Generated report\"\n      - echo \"Building\
-            \ the Spring Boot project\"\n      - mvn clean package -q -DskipTests\n\
-            \      - jdeps --recursive -verbose:class target/classes/ | grep -E \"\
-            ^(\\s)*com\\.example.demo(.)*classes$\" | tr -s \" \" | rev | cut -d'\
-            \ ' -f2- | rev > deps.txt\n      - aws s3 cp deps.txt s3://${BucketName}/deps/\n\
-            \      - echo \"Ending\"\n\nartifacts:\n  files:\n    - '**/*'\n  name:\
-            \ DeployOutput\n  secondary-artifacts:\n    ReportOutput:\n      files:\n\
-            \        - report.txt\n      name: ReportOutput\n      discard-paths:\
-            \ yes\n    DeployOutput:\n      files:\n        - target/*.jar\n     \
-            \ name: DeployOutput\n      discard-paths: no\n"
+            \    - aws s3 rm s3://${BucketName}/stats --recursive\n      - echo \"\
+            Starting the build process\"\n      - mvn clean validate -q\n\n  build:\n\
+            \    on-failure: ABORT\n    commands:\n      - echo \"Compiling the Spring\
+            \ Boot project\"\n      - mvn clean compile -q\n\n  post_build:\n    on-failure:\
+            \ CONTINUE\n    commands:\n      - echo \"Running the test suite\"\n \
+            \     - mvn test -q && export BUILD_STATUS=\"SUCCEEDED\" || export BUILD_STATUS=\"\
+            FAILED\"\n      - echo \"Tests completed\"\n      - echo \"Uploading Surefire\
+            \ reports to S3\"\n      - zip -r FeedbackBuildArtifacts.zip target/surefire-reports/\n\
+            \      - aws s3 cp FeedbackBuildArtifacts.zip s3://${BucketName}/build-artifacts/\n\
+            \      - echo \"Uploaded Surefire reports\"\n      - git show --name-status\
+            \ HEAD > report.txt\n      - cat report.txt\n      - echo \"Generated\
+            \ report\"\n      - echo \"Building the Spring Boot project\"\n      -\
+            \ mvn clean package -q -DskipTests\n      - jdeps --recursive -verbose:class\
+            \ target/classes/ | grep -E \"^(\\s)*com\\.example.demo(.)*classes$\"\
+            \ | tr -s \" \" | rev | cut -d' ' -f2- | rev > deps.txt\n      - aws s3\
+            \ cp deps.txt s3://${BucketName}/deps/\n      - echo \"Ending\"\n\nartifacts:\n\
+            \  files:\n    - '**/*'\n  name: DeployOutput\n  secondary-artifacts:\n\
+            \    ReportOutput:\n      files:\n        - report.txt\n      name: ReportOutput\n\
+            \      discard-paths: yes\n    DeployOutput:\n      files:\n        -\
+            \ target/*.jar\n      name: DeployOutput\n      discard-paths: no\n"
       Tags:
       - Key: Name
         Value:
@@ -671,7 +671,7 @@ Resources:
       - x86_64
       Code:
         S3Bucket: demo-bucket-cloudformation
-        S3Key: lambdacode/f5b22f0ac57340a2c2ea92a4fce2218e
+        S3Key: lambdacode/a57d3dc749529d5c1dcaedc4152c4fe2
       Description: State to create the report from the previus build phase, both commit
         one and tests execution one will be created
       FunctionName: createReport
@@ -752,7 +752,7 @@ Resources:
       - x86_64
       Code:
         S3Bucket: demo-bucket-cloudformation
-        S3Key: lambdacode/851ea7fd907445ba5fd93b1add7c849f
+        S3Key: lambdacode/b65fd0a39c67be960e50dc9b990ef717
       Description: State to generate test suite for the given .class file
       FunctionName: handleReport
       Handler: index.handleReport
@@ -769,6 +769,24 @@ Resources:
             Ref: AWS::StackName
       Timeout: 300
     DependsOn: LambdaRole
+  Stats:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+      - x86_64
+      Code:
+        S3Bucket: demo-bucket-cloudformation
+        S3Key: lambdacode/02f6f8ea744e73c42da511bb6de60e20
+      Description: State to generate stats
+      FunctionName: stats
+      Handler: index.stats
+      Role:
+        Fn::GetAtt:
+        - LambdaRoleStats
+        - Arn
+      Runtime: python3.10
+      Timeout: 60
+    DependsOn: LambdaRoleStats
   LambdaApprovalFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -924,6 +942,26 @@ Resources:
             Resource:
             - arn:aws:s3:::*
             - Fn::Sub: arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${RepositoryName}
+  LambdaRoleStats:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: CloudWatchLogsInsightsPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:StartQuery
+            - logs:GetQueryResults
+            Resource: '*'
   FeedbackStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
@@ -1099,6 +1137,20 @@ Resources:
         Fn::GetAtt:
         - StepFunctionRole
         - Arn
+      LoggingConfiguration:
+        Destinations:
+        - CloudWatchLogsLogGroup:
+            LogGroupArn:
+              Fn::GetAtt:
+              - StepFunctionLogGroup
+              - Arn
+        IncludeExecutionData: true
+        Level: ALL
+  StepFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/stepfunctions/FeedbackStateMachineLogs
+      RetentionInDays: 3
   StepFunctionRole:
     Type: AWS::IAM::Role
     Properties:
