@@ -1,0 +1,3061 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 21,
+      "panels": [],
+      "title": "Feedback Loop",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa3"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": false,
+            "axisLabel": "",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 12,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
+      "id": 20,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "Iteration"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "alabababa3"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "Iteration",
+              "type": "number"
+            },
+            {
+              "name": "FailingTests",
+              "type": "number"
+            },
+            {
+              "name": "CompilationErrors",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Failing Tests",
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "1"
+                  }
+                },
+                "fieldName": "Iteration"
+              }
+            ],
+            "match": "any",
+            "type": "exclude"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa3"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": false,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 12,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "id": 22,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "Iteration"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "alabababa3"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "Iteration",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Error Rate",
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "1"
+                  }
+                },
+                "fieldName": "Iteration"
+              }
+            ],
+            "match": "any",
+            "type": "exclude"
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Error Rate",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "FailingTests"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Tests"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": false
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Error Rate (%)",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Error Rate"
+                }
+              },
+              "operator": "*",
+              "right": {
+                "fixed": "100"
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "Iteration",
+                "Error Rate (%)"
+              ]
+            }
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 14,
+      "panels": [],
+      "title": "$package",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "decimals": 0,
+          "displayName": "Coverage",
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 3,
+        "y": 10
+      },
+      "id": 8,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "alabababa1"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "INSTRUCTION_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "INSTRUCTION_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Instruction Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "GROUP": {
+                "aggregations": []
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "PACKAGE": {
+                "aggregations": [],
+                "operation": "groupby"
+              }
+            }
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "${package}"
+                  }
+                },
+                "fieldName": "PACKAGE"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "INSTRUCTION_MISSED (sum)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "INSTRUCTION_COVERED (sum)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "INSTRUCTION_COVERED (sum)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "decimals": 0,
+          "displayName": "Coverage",
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 7,
+        "y": 10
+      },
+      "id": 9,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "${DS_MARCUSOLSSON-CSV-DATASOURCE}"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "LINE_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "LINE_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Line Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "GROUP": {
+                "aggregations": []
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "LINE_COVERED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "LINE_MISSED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "PACKAGE": {
+                "aggregations": [],
+                "operation": "groupby"
+              }
+            }
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "${package}"
+                  }
+                },
+                "fieldName": "PACKAGE"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "LINE_MISSED (sum)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "LINE_COVERED (sum)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "LINE_COVERED (sum)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "decimals": 0,
+          "displayName": "Coverage",
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 11,
+        "y": 10
+      },
+      "id": 11,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "${DS_MARCUSOLSSON-CSV-DATASOURCE}"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "METHOD_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "METHOD_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Method Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "BRANCH_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "BRANCH_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "GROUP": {
+                "aggregations": []
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "METHOD_COVERED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "METHOD_MISSED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "PACKAGE": {
+                "aggregations": [],
+                "operation": "groupby"
+              }
+            }
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "${package}"
+                  }
+                },
+                "fieldName": "PACKAGE"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "METHOD_MISSED (sum)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "METHOD_COVERED (sum)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "METHOD_COVERED (sum)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 6,
+        "x": 16,
+        "y": 10
+      },
+      "id": 19,
+      "options": {
+        "displayLabels": [],
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "first"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "alabababa2"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "Mutation Coverage (%)",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Killed Mutation",
+      "transformations": [
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Not Covered",
+            "binary": {
+              "left": {
+                "fixed": "100"
+              },
+              "operator": "-",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Mutation Coverage (%)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "${package}"
+                  }
+                },
+                "fieldName": "Name"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "decimals": 0,
+          "displayName": "Coverage",
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 5,
+        "y": 16
+      },
+      "id": 12,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "${DS_MARCUSOLSSON-CSV-DATASOURCE}"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "COMPLEXITY_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "COMPLEXITY_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Complexity Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "BRANCH_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "BRANCH_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "COMPLEXITY_COVERED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "COMPLEXITY_MISSED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "GROUP": {
+                "aggregations": []
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "METHOD_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "METHOD_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "PACKAGE": {
+                "aggregations": [],
+                "operation": "groupby"
+              }
+            }
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "${package}"
+                  }
+                },
+                "fieldName": "PACKAGE"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "COMPLEXITY_MISSED (sum)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "COMPLEXITY_COVERED (sum)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "COMPLEXITY_COVERED (sum)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "decimals": 0,
+          "displayName": "Coverage",
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "noValue": "0%",
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 9,
+        "y": 16
+      },
+      "id": 10,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "${DS_MARCUSOLSSON-CSV-DATASOURCE}"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "BRANCH_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "BRANCH_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Branch Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "BRANCH_COVERED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "BRANCH_MISSED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "GROUP": {
+                "aggregations": []
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "PACKAGE": {
+                "aggregations": [],
+                "operation": "groupby"
+              }
+            }
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "${package}"
+                  }
+                },
+                "fieldName": "PACKAGE"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "BRANCH_MISSED (sum)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "BRANCH_COVERED (sum)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "BRANCH_COVERED (sum)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "gauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "id": 6,
+      "panels": [],
+      "title": "Project Summary",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "decimals": 0,
+          "displayName": "Coverage",
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 3,
+        "y": 23
+      },
+      "id": 4,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "${DS_MARCUSOLSSON-CSV-DATASOURCE}"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "LINE_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "LINE_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Line Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "GROUP": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "LINE_COVERED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "LINE_MISSED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              }
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "LINE_MISSED (sum)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "LINE_COVERED (sum)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "LINE_COVERED (sum)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "decimals": 0,
+          "displayName": "Coverage",
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 7,
+        "y": 23
+      },
+      "id": 2,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "${DS_MARCUSOLSSON-CSV-DATASOURCE}"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "BRANCH_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "BRANCH_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Branch Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "BRANCH_COVERED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "BRANCH_MISSED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "GROUP": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "BRANCH_MISSED (sum)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "BRANCH_COVERED (sum)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "BRANCH_COVERED (sum)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "decimals": 0,
+          "displayName": "Coverage",
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 11,
+        "y": 23
+      },
+      "id": 3,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "${DS_MARCUSOLSSON-CSV-DATASOURCE}"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "METHOD_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "METHOD_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Method Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "BRANCH_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "BRANCH_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "GROUP": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "METHOD_COVERED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "METHOD_MISSED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              }
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "METHOD_MISSED (sum)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "METHOD_COVERED (sum)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "METHOD_COVERED (sum)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 6,
+        "x": 16,
+        "y": 23
+      },
+      "id": 16,
+      "options": {
+        "displayLabels": [],
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "first"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "alabababa2"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "Mutation Coverage (%)",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Killed Mutation",
+      "transformations": [
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Not Covered",
+            "binary": {
+              "left": {
+                "fixed": "100"
+              },
+              "operator": "-",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Mutation Coverage (%)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "decimals": 0,
+          "displayName": "Coverage",
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 5,
+        "y": 29
+      },
+      "id": 1,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "${DS_MARCUSOLSSON-CSV-DATASOURCE}"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "INSTRUCTION_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "INSTRUCTION_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Instruction Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "GROUP": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              }
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "INSTRUCTION_MISSED (sum)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "INSTRUCTION_COVERED (sum)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "INSTRUCTION_COVERED (sum)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "decimals": 0,
+          "displayName": "Coverage",
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 9,
+        "y": 29
+      },
+      "id": 5,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "${DS_MARCUSOLSSON-CSV-DATASOURCE}"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "COMPLEXITY_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "COMPLEXITY_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Complexity Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "BRANCH_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "BRANCH_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "COMPLEXITY_COVERED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "COMPLEXITY_MISSED": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              },
+              "GROUP": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "METHOD_COVERED": {
+                "aggregations": [
+                  "sum"
+                ]
+              },
+              "METHOD_MISSED": {
+                "aggregations": [
+                  "sum"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "COMPLEXITY_MISSED (sum)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "COMPLEXITY_COVERED (sum)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "COMPLEXITY_COVERED (sum)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": true
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa1"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "left",
+            "fillOpacity": 45,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "id": 13,
+      "options": {
+        "barRadius": 0.1,
+        "barWidth": 0.97,
+        "fullHighlight": true,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "orientation": "vertical",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xField": "CLASS",
+        "xTickLabelRotation": -90,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "${DS_MARCUSOLSSON-CSV-DATASOURCE}"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "CLASS",
+              "type": "string"
+            },
+            {
+              "name": "INSTRUCTION_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "INSTRUCTION_MISSED",
+              "type": "number"
+            },
+            {
+              "name": "LINE_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "LINE_MISSED",
+              "type": "number"
+            },
+            {
+              "name": "BRANCH_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "BRANCH_MISSED",
+              "type": "number"
+            },
+            {
+              "name": "METHOD_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "METHOD_MISSED",
+              "type": "number"
+            },
+            {
+              "name": "COMPLEXITY_COVERED",
+              "type": "number"
+            },
+            {
+              "name": "COMPLEXITY_MISSED",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Class Coverage",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "BRANCH_COVERED": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "BRANCH_MISSED": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "CLASS": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "COMPLEXITY_COVERED": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "COMPLEXITY_MISSED": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "INSTRUCTION_COVERED": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "INSTRUCTION_MISSED": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "LINE_COVERED": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "LINE_MISSED": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "METHOD_COVERED": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "METHOD_MISSED": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              }
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL_INSTRUCTION",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "INSTRUCTION_MISSED (last)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "INSTRUCTION_COVERED (last)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL_BRANCH",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "BRANCH_MISSED (last)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "BRANCH_COVERED (last)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL_LINE",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "LINE_MISSED (last)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "LINE_COVERED (last)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL_COMPLEXITY",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "COMPLEXITY_MISSED (last)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "COMPLEXITY_COVERED (last)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "TOTAL_METHOD",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "METHOD_MISSED (last)"
+                }
+              },
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "METHOD_COVERED (last)"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "INSTRUCTION COVERAGE",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "INSTRUCTION_COVERED (last)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL_INSTRUCTION"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "BRANCH COVERAGE",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "BRANCH_COVERED (last)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL_BRANCH"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "LINE COVERAGE",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "LINE_COVERED (last)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL_LINE"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "COMPLEXITY COVERAGE",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "COMPLEXITY_COVERED (last)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL_COMPLEXITY"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "METHOD COVERAGE",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "METHOD_COVERED (last)"
+                }
+              },
+              "operator": "/",
+              "right": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TOTAL_METHOD"
+                }
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "BRANCH COVERAGE": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "BRANCH_COVERAGE": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "CLASS": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "COMPLEXITY COVERAGE": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "COMPLEXITY_COVERAGE": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "INSTRUCTION COVERAGE": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "INSTRUCTION_COVERAGE": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "LINE COVERAGE": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "LINE_COVERAGE": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "METHOD COVERAGE": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "groupby"
+              },
+              "METHOD_COVERAGE": {
+                "aggregations": [
+                  "last"
+                ],
+                "operation": "aggregate"
+              },
+              "TOTAL_INSTRUCTION": {
+                "aggregations": []
+              }
+            }
+          }
+        }
+      ],
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "marcusolsson-csv-datasource",
+        "uid": "alabababa2"
+      },
+      "description": "Test Strength vs. Mutation Coverage tells you whether your strong test suite is also effective at catching the mutations in the code where strong indicate your tests are good at detecting faults. I.e.:\n- high Test Strength but low Mutation Coverage: not thoroughly covering all possible edge cases\n- high Mutation Coverage but low Test Strength: covering a lot of the code, but the logic is not deeply enough tested.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 6,
+        "y": 47
+      },
+      "id": 18,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "marcusolsson-csv-datasource",
+            "uid": "alabababa2"
+          },
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": false,
+          "refId": "A",
+          "schema": [
+            {
+              "name": "Mutation Coverage (%)",
+              "type": "number"
+            },
+            {
+              "name": "Test Strength (%)",
+              "type": "number"
+            }
+          ],
+          "skipRows": 0
+        }
+      ],
+      "title": "Mutation Coverage and Test Strength",
+      "type": "barchart"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "marcusolsson-csv-datasource",
+          "uid": "alabababa1"
+        },
+        "definition": "",
+        "description": "Package name",
+        "label": "Package",
+        "name": "package",
+        "options": [],
+        "query": {
+          "decimalSeparator": ".",
+          "delimiter": ",",
+          "header": true,
+          "ignoreUnknown": true,
+          "schema": [
+            {
+              "name": "PACKAGE",
+              "type": "string"
+            }
+          ],
+          "skipRows": 0
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Project Dashboard",
+  "uid": "ce8vba4j3u48wb",
+  "version": 3,
+  "weekStart": ""
+}

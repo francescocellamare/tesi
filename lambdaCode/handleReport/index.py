@@ -5,8 +5,24 @@ import codecommit
 import openaiModule as openai
 import os
 import deps
+import json
 
 cloudformation_client = boto3.client('cloudformation')
+
+def is_path_approved(repository_name, branch_name, path):
+    try:
+        content = codecommit.client.get_file(
+            repositoryName=repository_name, 
+            commitSpecifier=branch_name,
+            filePath='tested_paths.json'
+        )
+        filteredPath = content['fileContent'].decode('utf-8')
+        filteredPath = json.loads(filteredPath)['selected']
+        
+        trimmed_path = "/".join(path.split("/")[:-1])
+        return trimmed_path in filteredPath
+    except Exception as e:
+        return True
 
 def handleReport(event, context):
     print(f"Event received: {event}")  # Log the entire input event
@@ -51,12 +67,7 @@ def handleReport(event, context):
     print(f"Filtering files with regexp: {regexp}")
     filtered_files = [f for f in commit_report if (
             re.match(regexp, f['path']) and
-            # function to approve the path
-            (
-                "controller" in f['path'].lower() or
-                "service" in f['path'].lower() or
-                "utils" in f['path'].lower()
-            ) 
+            is_path_approved(repository_name=repository_name, branch_name=branch_name, path=f['path'])
         )]
     print(f"Filtered files: {filtered_files}")
 

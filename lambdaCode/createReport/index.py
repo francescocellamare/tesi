@@ -120,6 +120,10 @@ def createReport(event, context):
         csv_file_key = 'stats/feedbackLoop.csv'
         print(f"Checking for existing CSV file at {csv_file_key}.")
 
+        countTest = 0
+        for testSuite in test_results:
+            countTest += testSuite['TestsRun']
+            
         try:
             s3_client.head_object(Bucket=s3_Bucket_Name, Key=csv_file_key)
             print(f"CSV file found at {csv_file_key}. Appending data.")
@@ -128,7 +132,7 @@ def createReport(event, context):
             print(f"CSV file not found. Creating a new one at {csv_file_key}.")
             file_exists = False
 
-        csv_line = [1, countFailure, 1 if compilationError else 0]
+        csv_line = [1, countFailure, 1 if compilationError else 0, countTest]
         
         if file_exists:
             s3_object = s3_client.get_object(Bucket=s3_Bucket_Name, Key=csv_file_key)
@@ -151,7 +155,7 @@ def createReport(event, context):
         else:
             with io.StringIO() as output:
                 csv_writer = csv.writer(output)
-                csv_writer.writerow(["Iteration", "FailingTests", "CompilationErrors"])  
+                csv_writer.writerow(["Iteration", "FailingTests", "CompilationErrors", "Tests"])  
                 csv_writer.writerow(csv_line)
                 new_content = output.getvalue()
 

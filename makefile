@@ -5,6 +5,7 @@ TEMPLATE_FILE := ~/tesi/AWS/Prototype/my_template.yml
 PACKAGED_TEMPLATE := ~/tesi/AWS/Prototype/packaged_template.yml
 REGION := eu-south-1
 STACK_NAME ?= MyCloudFormationStack
+path ?= ./demo
 
 downloadS3:
 	rm -rf $(LOCAL_PATH)/*
@@ -63,3 +64,14 @@ update_stack:
 		--region $(REGION) \
 		--capabilities CAPABILITY_NAMED_IAM
 	echo "Stack $(STACK_NAME) updated successfully"
+
+.PHONY: setup_pipeline
+.SILENT: setup_pipeline
+setup_pipeline:
+	echo "Setting up the pipeline at $(path)"
+	echo "Moving things around..."
+	cp -r ./resources/* $(path)
+	echo "Done"
+	echo "Choose which directory you want to test"
+	python3 $(path)/script/select_path.py
+	echo "Done"

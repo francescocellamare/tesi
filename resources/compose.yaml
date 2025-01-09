@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=mydatabase'
+      - 'POSTGRES_PASSWORD=secret'
+      - 'POSTGRES_USER=myuser'
+    ports:
+      - '5432'
+    networks:
+      - app-network
+
+  backend:
+    build: .
+    container_name: 'springboot-backend'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mydatabase'
+      - 'SPRING_DATASOURCE_USERNAME=myuser'
+      - 'SPRING_DATASOURCE_PASSWORD=secret'
+    ports:
+      - '8080:8080'
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+  
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      # - grafana_data:/var/lib/grafana
+      - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboard.yaml
+      - ./grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+#      - ./datasources:/etc/grafana/provisioning/datasources
+      - ./target/site/jacoco/jacoco.csv:/var/jacoco
+      - ./target/pit-reports/output.csv:/var/pit
+      - ./grafana/feedbackLoop.csv:/var/feedbackLoop.csv
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+    environment:
+      - GF_INSTALL_PLUGINS=marcusolsson-csv-datasource
+      - GF_PLUGINS_ALLOW_LOCAL_MODE=true
+      - GF_SECURITY_ADMIN_USER=admin     # Default superuser username
+      - GF_SECURITY_ADMIN_PASSWORD=secret # Default superuser password
+
+networks:
+  app-network:
+    driver: bridge

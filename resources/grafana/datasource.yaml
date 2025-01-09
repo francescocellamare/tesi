@@ -1,0 +1,38 @@
+apiVersion: 1
+
+datasources:
+  - name: 'jacoco'   # Name of the CSV datasource
+    type: 'marcusolsson-csv-datasource'   # Type of the data source (CSV plugin)
+    editable: true                        # Whether the datasource is editable from the UI
+    is_default: true                      # Whether this is the default datasource
+    orgId: 1
+    uid: "alabababa1"
+    url: '/var/jacoco'      # Path where CSV files are stored in the Grafana container
+    jsonData:
+      storage: local
+      separator: ','                      # Separator used in the CSV file (comma for CSV)
+      firstRowIsHeader: true              # Whether the first row is a header
+
+  - name: 'pit' # Name of the CSV datasource
+    type: 'marcusolsson-csv-datasource'   # Type of the data source (CSV plugin)
+    editable: true                        # Whether the datasource is editable from the UI
+    is_default: false                     # Whether this is the default datasource
+    orgId: 1
+    uid: "alabababa2"
+    url: '/var/pit'                   # Path where CSV files are stored in the Grafana container
+    jsonData:
+      storage: local
+      separator: ','                      # Separator used in the CSV file (comma for CSV)
+      firstRowIsHeader: true              # Whether the first row is a header
+
+  - name: 'feedback' # Name of the CSV datasource
+    type: 'marcusolsson-csv-datasource'   # Type of the data source (CSV plugin)
+    editable: true                        # Whether the datasource is editable from the UI
+    is_default: false                     # Whether this is the default datasource
+    orgId: 1
+    uid: "alabababa3"
+    url: '/var/feedbackLoop.csv'                   # Path where CSV files are stored in the Grafana container
+    jsonData:
+      storage: local
+      separator: ','                      # Separator used in the CSV file (comma for CSV)
+      firstRowIsHeader: true              # Whether the first row is a header
