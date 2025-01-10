@@ -1,36 +1,35 @@
-
 ## 📂 Directories
 
 ### `demo/`
-Project used for testing
+Project used for testing.
 
 ### `lambdaCode/`
-Holds all lambda functions' code distributed as follow:
-- `createReport/`: create the report extracting data from commit and test validation
-- `handleReport/`: handle each case for generating tests
-- `sendEmail/`
-- `approval/`: handling the dev's selection inside the email, used by the API Gateway
-- `sendPullRequestEmail/`
-- `createPullRequest/`
-- `checkPullRequest/`: checks the PR status each 30s for 5 minutes, final check before deploy
-- `adaptOutput/`: parsing the image definition artifact according to ECS requirements
-- `stats`: not used till now
+Contains the code for all Lambda functions, structured as follows:
+- **`createReport/`**: Creates a report by extracting data from commits and validating tests.
+- **`handleReport/`**: Manages each case for generating tests.
+- **`sendEmail/`**: Handles email sending functionality.
+- **`approval/`**: Processes developer selections from emails, used by the API Gateway.
+- **`sendPullRequestEmail/`**: Sends pull request notifications via email.
+- **`createPullRequest/`**: Automates the creation of pull requests.
+- **`checkPullRequest/`**: Monitors pull request status every 30 seconds for 5 minutes, performing the final check before deployment.
+- **`adaptOutput/`**: Parses the image definition artifact to meet ECS requirements.
+- **`stats/`**: Reserved for future use (currently unused).
 
 ### `lambdalayer/`
-Used for configuration of _handleReport_ lambda function
+Contains configuration files used by the `handleReport` Lambda function.
 
 ### `resources/`
-Holds all the needed files as follow:
-- `grafana/`: configuration files for creating the local docker image
-- `script/`: set of script for setup of the dashboard .csv files and path selection
+Holds all necessary resource files:
+- **`grafana/`**: Configuration files for creating a local Docker image of Grafana.
+- **`script/`**: Scripts for setting up the dashboard, including `.csv` file preparation and path selection.
 
 ### `makefile`
-Commands to:
-- handle S3 bucket
-- handle report creation and delation (it's package each time due to the local code pushed inside a S3 bucket)
+Provides commands for:
+- Managing the S3 bucket.
+- Creating and deleting reports (packaged each time before pushing to the S3 bucket).
 
 ### `my_template.yml`
-Original template
+The original CloudFormation template.
 
 ### `packaged_template.yml`
-Template created using the command ```make create_template``` and deployed with ```make deploy_template```
+The processed CloudFormation template created using the command `make create_template` and deployed with `make deploy_template`.
