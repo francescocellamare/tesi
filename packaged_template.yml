@@ -671,7 +671,7 @@ Resources:
       - x86_64
       Code:
         S3Bucket: demo-bucket-cloudformation
-        S3Key: lambdacode/a57d3dc749529d5c1dcaedc4152c4fe2
+        S3Key: lambdacode/dfe938838057410fde871b7b32cc5023
       Description: State to create the report from the previus build phase, both commit
         one and tests execution one will be created
       FunctionName: createReport
@@ -752,7 +752,7 @@ Resources:
       - x86_64
       Code:
         S3Bucket: demo-bucket-cloudformation
-        S3Key: lambdacode/b65fd0a39c67be960e50dc9b990ef717
+        S3Key: lambdacode/9741bdd8732e2e26bbf24cd6da740642
       Description: State to generate test suite for the given .class file
       FunctionName: handleReport
       Handler: index.handleReport
